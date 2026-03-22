@@ -1,5 +1,0 @@
-version = getSubprojectVersion(project)
-
-loom {
-	accessWidenerPath = file('src/client/resources/fabric-client-gametest-api-v1.accesswidener')
-}

@@ -28,6 +28,10 @@ public class PinInHelper {
 
     private final PinIn pinIn = new PinIn().config().accelerate(true).commit();
 
+    public PinIn getPinInInstance() {
+        return this.pinIn;
+    }
+
     public void commitConfig() {
         PinIn.Config config = this.pinIn.config();
         config.keyboard(PinInHelper.keyboardMapping.getOrDefault((PinYinSouSuoKeyboard) Configs.pinyinSouSuoKeyboard.getOptionListValue(), Keyboard.QUANPIN));

@@ -6,7 +6,6 @@ import com.plusls.MasaGadget.impl.mod_tweak.malilib.pinyinSouSuo.PinInHelper;
 import com.plusls.MasaGadget.impl.mod_tweak.malilib.pinyinSouSuo.PinYinSouSuoKeyboard;
 import com.plusls.MasaGadget.util.ModId;
 import com.plusls.MasaGadget.util.PcaSyncProtocol;
-import com.plusls.MasaGadget.util.SearchMobSpawnPointUtil;
 import fi.dy.masa.malilib.config.options.ConfigBoolean;
 import fi.dy.masa.malilib.interfaces.IValueChangeCallback;
 import net.minecraft.ChatFormatting;
@@ -323,14 +322,6 @@ public class Configs {
     @Config(category = ConfigCategory.MINIHUD)
     public static MagicConfigBoolean pcaSyncProtocolSyncBeehive = Configs.cf.newConfigBoolean("pcaSyncProtocolSyncBeehive", false);
 
-    @Dependencies(require = @Dependency(ModId.minihud))
-    @Config(category = ConfigCategory.MINIHUD)
-    public static MagicConfigHotkey searchMobSpawnPoint = Configs.cf.newConfigHotkey("searchMobSpawnPoint");
-
-    @Dependencies(require = @Dependency(ModId.minihud))
-    @Config(category = ConfigCategory.MINIHUD)
-    public static MagicConfigStringList searchMobSpawnPointBlackList = Configs.cf.newConfigStringList("searchMobSpawnPointBlackList", ImmutableList.of());
-
     public static void init() {
         Configs.cm.parseConfigClass(Configs.class);
 
@@ -338,14 +329,6 @@ public class Configs {
 
         // Generic
         MagicConfigManager.setHotkeyCallback(openConfigGui, ConfigGui::openGui, true);
-
-        Configs.searchMobSpawnPoint.getKeybind().setCallback((keyAction, iKeybind) -> {
-            if (MagicLib.getInstance().getCurrentPlatform().isModLoaded(ModId.minihud)) {
-                SearchMobSpawnPointUtil.search();
-            }
-
-            return true;
-        });
 
         // Litematica
         Configs.syncAllEntityData.getKeybind().setCallback((keyAction, iKeybind) -> {
