@@ -1,0 +1,23 @@
+plugins {
+    alias(libs.plugins.replace.token)
+    alias(libs.plugins.shadow)
+
+    id("top.hendrixshen.magiclib.build-logic.core-project")
+    id("top.hendrixshen.magiclib.build-logic.process-resources")
+}
+
+repositories {
+    maven {
+        name = "FabricMC"
+        url = "https://maven.fabricmc.net"
+    }
+}
+
+dependencies {
+    compileOnly(libs.fabric.loader)
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}

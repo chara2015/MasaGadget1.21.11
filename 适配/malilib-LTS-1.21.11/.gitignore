@@ -1,0 +1,14 @@
+.gradle
+.settings
+bin/
+build/
+eclipse/
+logs/
+.classpath
+.project
+build.number
+Task
+.idea/
+run/
+libs/
+/src/main/generated/.cache/

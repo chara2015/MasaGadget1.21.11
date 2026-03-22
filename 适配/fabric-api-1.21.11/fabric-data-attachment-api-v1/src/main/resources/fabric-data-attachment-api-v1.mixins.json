@@ -1,0 +1,27 @@
+{
+  "required": true,
+  "package": "net.fabricmc.fabric.mixin.attachment",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AttachmentTargetsMixin",
+    "BannerBlockEntityMixin",
+    "BlockEntityMixin",
+    "PlayerChunkSenderMixin",
+    "ChunkAccessMixin",
+    "ConnectionMixin",
+    "ServerboundCustomPayloadPacketAccessor",
+    "EntityMixin",
+    "SerializableChunkDataMixin",
+    "ServerLevelMixin",
+    "VarIntAccessor",
+    "LevelChunkMixin",
+    "LevelMixin",
+    "ImposterProtoChunkMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

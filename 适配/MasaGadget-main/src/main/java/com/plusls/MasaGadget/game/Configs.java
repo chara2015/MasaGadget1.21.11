@@ -1,0 +1,396 @@
+package com.plusls.MasaGadget.game;
+
+import com.google.common.collect.ImmutableList;
+import com.plusls.MasaGadget.SharedConstants;
+import com.plusls.MasaGadget.impl.mod_tweak.malilib.pinyinSouSuo.PinInHelper;
+import com.plusls.MasaGadget.impl.mod_tweak.malilib.pinyinSouSuo.PinYinSouSuoKeyboard;
+import com.plusls.MasaGadget.util.ModId;
+import com.plusls.MasaGadget.util.PcaSyncProtocol;
+import com.plusls.MasaGadget.util.SearchMobSpawnPointUtil;
+import fi.dy.masa.malilib.config.options.ConfigBoolean;
+import fi.dy.masa.malilib.interfaces.IValueChangeCallback;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import top.hendrixshen.magiclib.MagicLib;
+import top.hendrixshen.magiclib.api.dependency.DependencyType;
+import top.hendrixshen.magiclib.api.dependency.annotation.Dependencies;
+import top.hendrixshen.magiclib.api.dependency.annotation.Dependency;
+import top.hendrixshen.magiclib.api.malilib.annotation.Config;
+import top.hendrixshen.magiclib.api.malilib.config.MagicConfigManager;
+import top.hendrixshen.magiclib.api.platform.PlatformType;
+import top.hendrixshen.magiclib.impl.malilib.config.MagicConfigFactory;
+import top.hendrixshen.magiclib.impl.malilib.config.option.*;
+import top.hendrixshen.magiclib.util.minecraft.ComponentUtil;
+import top.hendrixshen.magiclib.util.minecraft.InfoUtil;
+
+import java.util.*;
+
+public class Configs {
+    private static final MagicConfigManager cm = SharedConstants.getConfigManager();
+    private static final MagicConfigFactory cf = Configs.cm.getConfigFactory();
+
+    // GENERIC
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigBoolean autoSyncEntityData = Configs.cf.newConfigBoolean("autoSyncEntityData", false);
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigBoolean cacheContainerMenu = Configs.cf.newConfigBoolean("cacheContainerMenu", true);
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigBoolean debug = Configs.cf.newConfigBoolean("debug", false);
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigHotkey openConfigGui = Configs.cf.newConfigHotkey("openConfigGui", "G,C");
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigBooleanHotkeyed renderNextRestockTime = Configs.cf.newConfigBooleanHotkeyed("renderNextRestockTime", false);
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigBooleanHotkeyed renderTradeEnchantedBook = Configs.cf.newConfigBooleanHotkeyed("renderTradeEnchantedBook", false);
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigBooleanHotkeyed renderVillageHomeTracer = Configs.cf.newConfigBooleanHotkeyed("renderVillageHomeTracer", false);
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigColor renderVillageHomeTracerColor = Configs.cf.newConfigColor("renderVillageHomeTracerColor", "#500000FF");
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigBooleanHotkeyed renderVillageJobSiteTracer = Configs.cf.newConfigBooleanHotkeyed("renderVillageJobSiteTracer", false);
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigColor renderVillageJobSiteTracerColor = Configs.cf.newConfigColor("renderVillageJobSiteTracerColor", "#5000FF00");
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigBooleanHotkeyed renderZombieVillagerConvertTime = Configs.cf.newConfigBooleanHotkeyed("renderZombieVillagerConvertTime", false);
+
+    @Config(category = ConfigCategory.GENERIC)
+    public static MagicConfigHotkey syncAllEntityData = Configs.cf.newConfigHotkey("syncAllEntityData");
+
+    // MALILIB
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.malilib, versionPredicates = "<0.11.0"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FABRIC_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minecraft, versionPredicates = "<1.18-"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FORGE_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minihud, versionPredicates = "<0.20.0"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FABRIC_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minecraft, versionPredicates = "<1.18-"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FORGE_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.tweakeroo, versionPredicates = "<0.11.1"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FABRIC_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minecraft, versionPredicates = "<1.18-"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FORGE_LIKE)
+            }
+    )
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean backportI18nSupport = Configs.cf.newConfigBoolean("backportI18nSupport", false);
+
+    @Dependencies(
+            require = {
+                    @Dependency(ModId.mod_menu),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FABRIC_LIKE)
+            }
+    )
+    @Dependencies(require = @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FORGE_LIKE))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean fastSwitchMasaConfigGui = Configs.cf.newConfigBoolean("fastSwitchMasaConfigGui", false);
+
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBooleanHotkeyed favoritesSupport = Configs.cf.newConfigBooleanHotkeyed("favoritesSupport", false);
+
+    @Dependencies(require = @Dependency(ModId.malilib))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean fixConfigWidgetWidth = Configs.cf.newConfigBoolean("fixConfigWidgetWidth", false);
+
+    @Dependencies(require = @Dependency(ModId.malilib))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean fixConfigWidgetWidthExpand = Configs.cf.newConfigBoolean("fixConfigWidgetWidthExpand", false);
+
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.malilib, versionPredicates = "<0.11.0"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FABRIC_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minecraft, versionPredicates = "<1.18-"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FORGE_LIKE)
+            }
+    )
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean fixGetInventoryType = Configs.cf.newConfigBoolean("fixGetInventoryType", false);
+
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.malilib, versionPredicates = "<0.11.6"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FABRIC_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minecraft, versionPredicates = "<1.18-"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FORGE_LIKE)
+            }
+    )
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean fixSearchbarHotkeyInput = Configs.cf.newConfigBoolean("fixSearchbarHotkeyInput", false);
+
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.malilib, versionPredicates = "<0.11.0"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FABRIC_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minecraft, versionPredicates = "<1.18-"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FORGE_LIKE)
+            }
+    )
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean optimizeConfigWidgetSearch = Configs.cf.newConfigBoolean("optimizeConfigWidgetSearch", false);
+
+    @Dependencies(conflict = @Dependency("jecharacters"))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean pinyinSouSuo = Configs.cf.newConfigBoolean("pinyinSouSuo", false);
+
+    @Dependencies(conflict = @Dependency("jecharacters"))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean pinyinSouSuoFZh2Z = Configs.cf.newConfigBoolean("pinyinSouSuoFZh2Z", false);
+
+    @Dependencies(conflict = @Dependency("jecharacters"))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean pinyinSouSuoFSh2S = Configs.cf.newConfigBoolean("pinyinSouSuoFSh2S", false);
+
+    @Dependencies(conflict = @Dependency("jecharacters"))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean pinyinSouSuoFCh2C = Configs.cf.newConfigBoolean("pinyinSouSuoFCh2C", false);
+
+    @Dependencies(conflict = @Dependency("jecharacters"))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean pinyinSouSuoFAng2An = Configs.cf.newConfigBoolean("pinyinSouSuoFAng2An", false);
+
+    @Dependencies(conflict = @Dependency("jecharacters"))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean pinyinSouSuoFIng2In = Configs.cf.newConfigBoolean("pinyinSouSuoFIng2In", false);
+
+    @Dependencies(conflict = @Dependency("jecharacters"))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean pinyinSouSuoFEng2En = Configs.cf.newConfigBoolean("pinyinSouSuoFEng2En", false);
+
+    @Dependencies(conflict = @Dependency("jecharacters"))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean pinyinSouSuoFU2V = Configs.cf.newConfigBoolean("pinyinSouSuoFU2V", false);
+
+    @Dependencies(conflict = @Dependency("jecharacters"))
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigOptionList pinyinSouSuoKeyboard = Configs.cf.newConfigOptionList("pinyinSouSuoKeyboard", PinYinSouSuoKeyboard.QUANPIN);
+
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigBoolean showOriginalConfigName = Configs.cf.newConfigBoolean("showOriginalConfigName", false);
+
+    @Config(category = ConfigCategory.MALILIB)
+    public static MagicConfigDouble showOriginalConfigNameScale = Configs.cf.newConfigDouble("showOriginalConfigNameScale", 0.65, 0, 2);
+
+    // Tweakeroo
+    @Dependencies(require = @Dependency(ModId.tweakeroo))
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigBoolean inventoryPreviewSupportComparator = Configs.cf.newConfigBoolean("inventoryPreviewSupportComparator", false);
+
+    @Dependencies(require = @Dependency(ModId.tweakeroo))
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigBoolean inventoryPreviewSupportPlayer = Configs.cf.newConfigBoolean("inventoryPreviewSupportPlayer", false);
+
+    @Dependencies(require = @Dependency(ModId.tweakeroo))
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigBoolean inventoryPreviewSupportSelect = Configs.cf.newConfigBoolean("inventoryPreviewSupportSelect", false);
+
+    @Dependencies(require = @Dependency(ModId.tweakeroo))
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigBoolean inventoryPreviewSupportShulkerBoxItemEntity = Configs.cf.newConfigBoolean("inventoryPreviewSupportShulkerBoxItemEntity", false);
+
+    @Dependencies(require = @Dependency(ModId.tweakeroo))
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigBoolean inventoryPreviewSupportTradeOfferList = Configs.cf.newConfigBoolean("inventoryPreviewSupportTradeOfferList", false);
+
+    @Dependencies(require = @Dependency(ModId.tweakeroo))
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigBoolean inventoryPreviewSyncData = Configs.cf.newConfigBoolean("inventoryPreviewSyncData", false);
+
+    @Dependencies(require = @Dependency(ModId.tweakeroo))
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigBoolean inventoryPreviewSyncDataClientOnly = Configs.cf.newConfigBoolean("inventoryPreviewSyncDataClientOnly", false);
+
+    @Dependencies(
+            require = @Dependency(ModId.tweakeroo),
+            conflict = @Dependency(value = ModId.minecraft, versionPredicates = ">=1.21-")
+    )
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigBoolean inventoryPreviewUseCache = Configs.cf.newConfigBoolean("inventoryPreviewUseCache", false);
+
+    @Dependencies(require = {
+            @Dependency(ModId.tweakeroo),
+            @Dependency(ModId.itemscroller)
+    })
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigBoolean restockWithCrafting = Configs.cf.newConfigBoolean("restockWithCrafting", false);
+
+    @Dependencies(require = {
+            @Dependency(ModId.tweakeroo),
+            @Dependency(ModId.itemscroller)
+    })
+    @Config(category = ConfigCategory.TWEAKEROO)
+    public static MagicConfigStringList restockWithCraftingRecipes = Configs.cf.newConfigStringList("restockWithCraftingRecipes", ImmutableList.of());
+
+    // Litematica
+    @Dependencies(require = @Dependency(ModId.litematica))
+    @Config(category = ConfigCategory.LITEMATICA)
+    public static MagicConfigBooleanHotkeyed betterEasyPlaceMode = Configs.cf.newConfigBooleanHotkeyed("betterEasyPlaceMode", false);
+
+    @Dependencies(require = @Dependency(ModId.litematica))
+    @Config(category = ConfigCategory.LITEMATICA)
+    public static MagicConfigBooleanHotkeyed disableLitematicaEasyPlaceFailTip = Configs.cf.newConfigBooleanHotkeyed("disableLitematicaEasyPlaceFailTip", false);
+
+    @Dependencies(require = @Dependency(ModId.litematica))
+    @Config(category = ConfigCategory.LITEMATICA)
+    public static MagicConfigBooleanHotkeyed fixAccurateProtocol = Configs.cf.newConfigBooleanHotkeyed("fixAccurateProtocol", false);
+
+    @Dependencies(require = {
+            @Dependency(value = ModId.litematica, versionPredicates = "<0.0.0-dev.20210917.192300"),
+            @Dependency(ModId.tweakeroo),
+            @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FABRIC_LIKE)
+    })
+    @Config(category = ConfigCategory.LITEMATICA)
+    public static MagicConfigBoolean nudgeSelectionSupportFreeCamera = Configs.cf.newConfigBoolean("nudgeSelectionSupportFreeCamera", false);
+
+    @Dependencies(require = @Dependency(ModId.litematica))
+    @Config(category = ConfigCategory.LITEMATICA)
+    public static MagicConfigBoolean saveInventoryToSchematicInServer = Configs.cf.newConfigBoolean("saveInventoryToSchematicInServer", false);
+
+    @Dependencies(require = @Dependency(ModId.litematica))
+    @Config(category = ConfigCategory.LITEMATICA)
+    public static MagicConfigBoolean useRelativePath = Configs.cf.newConfigBoolean("useRelativePath", false);
+
+    // MiniHUD
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minihud, versionPredicates = "<0.31.999-sakura.21"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FABRIC_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minecraft, versionPredicates = "<1.21.1-"),
+                    @Dependency(value = ModId.minihud, versionPredicates = "*"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FORGE_LIKE)
+            }
+    )
+    @Dependencies(
+            require = {
+                    @Dependency(value = ModId.minecraft, versionPredicates = ">1.21.1-"),
+                    @Dependency(value = ModId.minihud, versionPredicates = ">0.1.21-mc1.21"),
+                    @Dependency(dependencyType = DependencyType.PLATFORM, platformType = PlatformType.FORGE_LIKE)
+            }
+    )
+    @Config(category = ConfigCategory.MINIHUD)
+    public static MagicConfigBoolean minihudI18n = Configs.cf.newConfigBoolean("minihudI18n", false);
+
+    @Dependencies(require = {
+            @Dependency(ModId.minihud),
+            @Dependency(ModId.tweakeroo),
+            @Dependency(value = ModId.minecraft, versionPredicates = ">1.14.4")
+    })
+    @Config(category = ConfigCategory.MINIHUD)
+    public static MagicConfigBoolean pcaSyncProtocolSyncBeehive = Configs.cf.newConfigBoolean("pcaSyncProtocolSyncBeehive", false);
+
+    @Dependencies(require = @Dependency(ModId.minihud))
+    @Config(category = ConfigCategory.MINIHUD)
+    public static MagicConfigHotkey searchMobSpawnPoint = Configs.cf.newConfigHotkey("searchMobSpawnPoint");
+
+    @Dependencies(require = @Dependency(ModId.minihud))
+    @Config(category = ConfigCategory.MINIHUD)
+    public static MagicConfigStringList searchMobSpawnPointBlackList = Configs.cf.newConfigStringList("searchMobSpawnPointBlackList", ImmutableList.of());
+
+    public static void init() {
+        Configs.cm.parseConfigClass(Configs.class);
+
+        IValueChangeCallback<ConfigBoolean> pinYinCallback = configBoolean -> PinInHelper.getInstance().commitConfig();
+
+        // Generic
+        MagicConfigManager.setHotkeyCallback(openConfigGui, ConfigGui::openGui, true);
+
+        Configs.searchMobSpawnPoint.getKeybind().setCallback((keyAction, iKeybind) -> {
+            if (MagicLib.getInstance().getCurrentPlatform().isModLoaded(ModId.minihud)) {
+                SearchMobSpawnPointUtil.search();
+            }
+
+            return true;
+        });
+
+        // Litematica
+        Configs.syncAllEntityData.getKeybind().setCallback((keyAction, iKeybind) -> {
+            if (!PcaSyncProtocol.enable) {
+                return true;
+            }
+
+            Minecraft mc = Minecraft.getInstance();
+
+            for (Entity entity : Objects.requireNonNull(mc.level).entitiesForRendering()) {
+                PcaSyncProtocol.syncEntity(entity.getId());
+            }
+
+            InfoUtil.displayChatMessage(ComponentUtil.trCompat("masa_gadget_mod.message.syncAllEntityDataSuccess")
+                    .withStyle(ChatFormatting.GREEN));
+            return true;
+        });
+
+        // Malilib
+        Configs.fastSwitchMasaConfigGui.setValueChangeCallback(Configs::redrawConfigGui);
+        Configs.favoritesSupport.setValueChangeCallback(Configs::redrawConfigGui);
+        Configs.showOriginalConfigName.setValueChangeCallback(Configs::redrawConfigGui);
+        Configs.showOriginalConfigNameScale.setValueChangeCallback(Configs::redrawConfigGui);
+        Configs.pinyinSouSuo.setValueChangeCallback(pinYinCallback);
+        Configs.pinyinSouSuoFZh2Z.setValueChangeCallback(pinYinCallback);
+        Configs.pinyinSouSuoFSh2S.setValueChangeCallback(pinYinCallback);
+        Configs.pinyinSouSuoFCh2C.setValueChangeCallback(pinYinCallback);
+        Configs.pinyinSouSuoFAng2An.setValueChangeCallback(pinYinCallback);
+        Configs.pinyinSouSuoFIng2In.setValueChangeCallback(pinYinCallback);
+        Configs.pinyinSouSuoFEng2En.setValueChangeCallback(pinYinCallback);
+        Configs.pinyinSouSuoFU2V.setValueChangeCallback(pinYinCallback);
+    }
+
+    private static void redrawConfigGui(Object object) {
+        ConfigGui.getCurrentInstance().ifPresent(ConfigGui::reDraw);
+    }
+
+    public static class ConfigCategory {
+        public static final String GENERIC = "generic";
+        public static final String LITEMATICA = "litematica";
+        public static final String MALILIB = "malilib";
+        public static final String MINIHUD = "minihud";
+        public static final String TWEAKEROO = "tweakeroo";
+    }
+}

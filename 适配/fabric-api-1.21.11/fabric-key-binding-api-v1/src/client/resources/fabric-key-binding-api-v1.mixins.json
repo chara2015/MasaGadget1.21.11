@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "net.fabricmc.fabric.mixin.client.keybinding",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "OptionsMixin",
+    "KeyMappingAccessor",
+    "KeyMappingCategoryMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

@@ -1,0 +1,274 @@
+import groovy.json.JsonBuilder
+import groovy.json.JsonSlurper
+
+plugins {
+    id("java")
+    id("maven-publish")
+    id("signing")
+}
+
+allprojects {
+    apply(plugin: "java")
+    apply(plugin: "maven-publish")
+    apply(plugin: "signing")
+}
+
+Project coreProject = evaluationDependsOn(":magiclib-core:${project.name}")
+
+jar {
+    outputs.upToDateWhen { false }
+    dependsOn(coreProject.tasks.shadowJar)
+    dependsOn("copyPublishModule")
+}
+
+tasks.register("copyPublishModule", Copy.class) { Copy copyTask ->
+    copyTask.setGroup("${project.property("mod.id")}")
+    delete(project.layout.buildDirectory.file("tmp/submods/publish"))
+
+    from {
+        coreProject.tasks.shadowJar.outputs.files
+    }
+
+    into(project.layout.buildDirectory.file("tmp/submods/publish"))
+}
+
+tasks.withType(AbstractPublishToMaven).configureEach {
+    enabled = false
+}
+
+tasks.withType(ProcessResources).configureEach {
+    enabled = false
+}
+
+subprojects {
+    Map<String, Map<String, ?>> settings = rootProject.file("settings.json").withReader {
+        new JsonSlurper().parse(it) as Map<String, Map<String, ?>>
+    }
+
+    Set<Project> submodules = new HashSet<>()
+
+    for (String module_name : settings.get("projects").keySet()) {
+        Map<String, ?> project_detail = settings.get("projects").get(module_name) as Map<String, ?>
+        String prefix = project_detail.get("prefix")
+        List<String> versions = project_detail.get("versions") as List<String>
+        versions.findAll { it == "${project.name}-${project.parent.name}" }
+                .collect { project(":${module_name}:${prefix}-${it}") }
+                .forEach { submodules.add(it) }
+    }
+
+    Set<Project> submodules_publish = submodules.findAll { !it.name.contains("better-dev") }
+    Set<Project> submodules_unpublish = submodules.findAll { !(it in submodules_publish) }
+
+    base {
+        setArchivesName("${project.parent.property("mod.archives_base_name")}-mc${project.name}-${project.parent.name}")
+        setGroup("${project.parent.property("mod.maven_group")}")
+        setVersion(project.getModVersion(rootProject))
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+        withSourcesJar()
+        withJavadocJar()
+    }
+
+    jar {
+        outputs.upToDateWhen { false }
+        dependsOn(project.parent.tasks.jar)
+        dependsOn("copyPublishModule")
+        dependsOn("copyUnpublishModule")
+        dependsOn("processMetadata")
+
+        from(project.layout.buildDirectory.file("tmp/submods/publish")) {
+            into("META-INF/jars")
+        }
+
+        from(project.parent.layout.buildDirectory.file("tmp/submods/publish")) {
+            into("META-INF/jars")
+        }
+    }
+
+    processResources {
+        dependsOn(coreProject.tasks.processResources)
+        outputs.upToDateWhen { false }
+
+        inputs.property("mod_description", project.property("mod.description"))
+        inputs.property("mod_homepage"   , project.property("mod.homepage"))
+        inputs.property("mod_id"         , project.property("mod.id"))
+        inputs.property("mod_license"    , project.property("mod.license"))
+        inputs.property("mod_name"       , project.property("mod.name"))
+        inputs.property("mod_sources"    , project.property("mod.sources"))
+        inputs.property("mod_version"    , project.getVersionWithCommitHash(rootProject))
+
+        from(project.parent.sourceSets.main.resources.srcDirs) {
+            include("fabric.mod.json")
+            expand([
+                    "mod_description": inputs.properties.get("mod_description"),
+                    "mod_homepage"   : inputs.properties.get("mod_homepage"),
+                    "mod_id"         : inputs.properties.get("mod_id"),
+                    "mod_license"    : inputs.properties.get("mod_license"),
+                    "mod_name"       : inputs.properties.get("mod_name"),
+                    "mod_sources"    : inputs.properties.get("mod_sources"),
+                    "mod_version"    : inputs.properties.get("mod_version")
+            ])
+        }
+
+        from("${rootDir}/LICENSE")
+        from("${rootDir}/icon.png") {
+            into("assets/${project.property("mod.id")}")
+        }
+    }
+
+    signing {
+        String signingKey = project.getOrDefault("secrets.gpg.signingKey", project.getEnv().SIGNING_PGP_KEY)
+        String signingPassword = project.getOrDefault("secrets.gpg.signingPassword", project.getEnv().SIGNING_PGP_PASSWORD)
+        required = signingKey
+        useInMemoryPgpKeys(signingKey, signingPassword ? signingPassword : "")
+        sign(publishing.publications)
+    }
+
+    publishing {
+        publications { PublicationContainer publications ->
+            register("release", MavenPublication) { MavenPublication publication ->
+                artifactId = "${project.parent.property("mod.artifact_name")}-${project.name}-${project.parent.name}"
+                artifact(jar)
+                artifact(javadocJar)
+                artifact(sourcesJar)
+                version = "${this.project.getMavenArtifactVersion(rootProject)}"
+                this.project.addPomMetadataInformation(this.project, publication)
+
+                pom.withXml { XmlProvider provider ->
+                    Node dependencies = provider.asNode().appendNode("dependencies")
+                    Node core_dependency = dependencies.appendNode("dependency")
+                    core_dependency.appendNode("groupId", coreProject.group)
+                    core_dependency.appendNode("artifactId", "${coreProject.parent.property("mod.artifact_name")}-${coreProject.name}")
+                    core_dependency.appendNode("version", "${this.project.getMavenArtifactVersion(coreProject.parent)}")
+                    core_dependency.appendNode("scope", "compile")
+                    submodules
+                            .findAll { !it.name.contains("legacy") }
+                            .forEach { Project submodule ->
+                                Node dependency = dependencies.appendNode("dependency")
+                                dependency.appendNode("groupId", submodule.group)
+                                dependency.appendNode("artifactId", "${submodule.parent.property("mod.artifact_name")}-${submodule.name.replace("${(settings.get("projects").get(submodule.parent.name) as Map<String, ?>).get("prefix")}-", "")}")
+                                dependency.appendNode("version", "${this.project.getMavenArtifactVersion(submodule.parent)}")
+                                dependency.appendNode("scope", "compile")
+                            }
+                }
+            }
+        }
+
+        repositories { RepositoryHandler repositoryHandler ->
+            mavenLocal {
+                name = "mavenLocal"
+            }
+
+            maven {
+                name = "projectLocalRelease"
+                url = "${rootDir}/publish/release"
+            }
+
+            maven {
+                name = "nyanMavenRelease"
+                url = "https://maven.hendrixshen.moe/releases"
+
+                project.credentialsNyanMaven(it)
+            }
+        }
+    }
+
+    // Solutions from: https://youtrack.jetbrains.com/issue/KT-46466
+    TaskCollection<Sign> signingTasks = tasks.withType(Sign)
+    tasks.withType(AbstractPublishToMaven).configureEach {
+        dependsOn(signingTasks)
+    }
+
+    tasks.withType(PublishToMavenRepository).configureEach {
+        Provider<Boolean> predicate = provider {
+            repository == publishing.repositories.mavenLocal ||
+                    (repository == publishing.repositories.projectLocalRelease && publication == publishing.publications.release) ||
+                    (repository == publishing.repositories.nyanMavenRelease && publication == publishing.publications.release && project.isNyanMavenCredentialsExist())
+        }
+
+        onlyIf {
+            predicate.get()
+        }
+    }
+
+    tasks.register("copyPublishModule", Copy.class) { Copy copyTask ->
+        copyTask.dependsOn(submodules.collect { it.tasks.remapJar })
+        copyTask.setGroup("${project.property("mod.id")}")
+        delete(project.layout.buildDirectory.file("tmp/submods/publish"))
+
+        from {
+            submodules_publish.collect {
+                it.tasks.remapJar.outputs.files
+            }
+        }
+
+        into(project.layout.buildDirectory.file("tmp/submods/publish"))
+    }
+
+    tasks.register("copyUnpublishModule", Copy.class) { Copy copyTask ->
+        copyTask.dependsOn(submodules.collect { it.tasks.remapJar })
+        copyTask.setGroup("${project.property("mod.id")}")
+        delete(project.layout.buildDirectory.file("tmp/submods/unpublish"))
+
+        from {
+            submodules_unpublish.collect {
+                it.tasks.remapJar.outputs.files
+            }
+        }
+
+        into(project.layout.buildDirectory.file("tmp/submods/unpublish"))
+    }
+
+    tasks.register("processMetadata", ProcessMetadata.class) { ProcessMetadata processTask ->
+        processTask.dependsOn(tasks.processResources)
+        processTask.setGroup("${project.property("mod.id")}")
+        processTask.fabricMetadataFile.set(file(project.layout.buildDirectory.file("resources/main/fabric.mod.json")))
+        processTask.coreProject.set(coreProject)
+        processTask.subProjects.set(submodules_publish)
+    }
+}
+
+abstract class ProcessMetadata extends DefaultTask {
+    @Input
+    abstract Property<File> getFabricMetadataFile();
+
+    @Input
+    abstract Property<Project> getCoreProject();
+
+    @Input
+    abstract SetProperty<Project> getSubProjects();
+
+    @TaskAction
+    void runTask() {
+        try {
+            this.runTaskImpl();
+        } catch (Exception e) {
+            this.getLogger().error("Failed to execute ProcessMetadata task.", e);
+            throw e;
+        }
+    }
+
+    private void runTaskImpl() {
+        Set<String> mc_condition = []
+        Set<Map<String, String>> jars = [["file": "META-INF/jars/${this.coreProject.get().parent.property("mod.archives_base_name")}-fabric-${this.coreProject.get().version}.jar"]]
+
+        this.subProjects.get().forEach {
+            mc_condition.add("${it.property("dependencies.minecraft_dependency")}")
+            jars.add(["file": "META-INF/jars/${it.parent.property("mod.archives_base_name")}-mc${it.property("dependencies.minecraft_version")}-${it.loom.platform.get().toString().toLowerCase()}-${it.version}.jar"])
+
+        }
+
+        File file = this.fabricMetadataFile.get()
+        JsonSlurper slurper = new JsonSlurper()
+        JsonBuilder builder = new JsonBuilder(slurper.parse(file))
+        builder.content.depends.minecraft = mc_condition
+        builder.content.jars = jars
+
+        file.withWriter {
+            it.append(builder.toPrettyString())
+        }
+    }
+}

@@ -1,0 +1,122 @@
+package top.hendrixshen.magiclib.impl.i18n.provider;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
+
+import top.hendrixshen.magiclib.MagicLib;
+import top.hendrixshen.magiclib.api.i18n.LanguageProvider;
+import top.hendrixshen.magiclib.util.JsonUtil;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class FileLanguageProvider implements LanguageProvider {
+    @Getter(lazy = true)
+    private static final FileLanguageProvider instance = new FileLanguageProvider();
+
+    private final Map<String, List<Path>> files = Maps.newConcurrentMap();
+
+    @Override
+    public void init() {
+        try {
+            for (URL resource : Collections.list(this.getClassLoader().getResources("assets"))) {
+                if (!resource.getProtocol().equals("file") && !resource.getProtocol().equals("union")) {
+                    continue;
+                }
+
+                Path path = Paths.get(resource.toURI());
+                Files.walkFileTree(path, new LanguageFileVisitor(path, this.files, false));
+            }
+        } catch (IOException | URISyntaxException e) {
+            MagicLib.getLogger().error("Failed to load language file.", e);
+        }
+    }
+
+    @Override
+    public void reload() {
+        this.files.clear();
+        this.init();
+    }
+
+    @Override
+    public void reload(String LanguageCode) {
+        this.reload();
+    }
+
+    @Override
+    public void loadLanguage(String languageCode) {
+        // NO-OP
+    }
+
+    @Override
+    public Map<String, String> getLanguage(String languageCode) {
+        Map<String, String> result = Maps.newConcurrentMap();
+
+        this.files.getOrDefault(languageCode, Collections.emptyList()).forEach(file -> {
+            try (InputStream inputStream = Files.newInputStream(file)) {
+                JsonUtil.loadLanguageMapFromJson(inputStream, result::put);
+                MagicLib.getLogger().debug("Loaded language file {}.", file);
+            } catch (Exception e) {
+                MagicLib.getLogger().error("Failed to load language file {}.", file, e);
+            }
+        });
+
+        return result;
+    }
+
+    @ApiStatus.Internal
+    @AllArgsConstructor
+    public static class LanguageFileVisitor implements FileVisitor<Path> {
+        private final Path basePath;
+        private final Map<String, List<Path>> files;
+        private final boolean prefix;
+
+        @Override
+        public @NotNull FileVisitResult preVisitDirectory(Path dir, @NotNull BasicFileAttributes attrs) {
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public @NotNull FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs) {
+            String name = (prefix ? "" : "assets/") + this.basePath.relativize(file).toString()
+                    .replace("\\", "/");
+            Matcher matcher = LanguageProvider.LANGUAGE_PATH_PATTERN.matcher(name);
+
+            if (!matcher.find()) {
+                return FileVisitResult.CONTINUE;
+            }
+
+            this.files.computeIfAbsent(matcher.group(2), key -> Lists.newArrayList()).add(file);
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public @NotNull FileVisitResult visitFileFailed(Path file, @NotNull IOException exc) {
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public @NotNull FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+            return FileVisitResult.CONTINUE;
+        }
+    }
+}

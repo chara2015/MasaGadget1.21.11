@@ -1,0 +1,3 @@
+accessWidener	v2	named
+accessible	class	net/minecraft/core/MappedRegistry$TagSet
+accessible	field	net/minecraft/core/HolderSet$Named	contents	Ljava/util/List;

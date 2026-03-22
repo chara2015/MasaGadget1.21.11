@@ -1,0 +1,31 @@
+{
+  "required": true,
+  "package": "net.fabricmc.fabric.mixin.content.registry",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlockBehaviourBlockStateBaseMixin",
+    "BlockBehaviourAccessor",
+    "AxeItemAccessor",
+    "AxeItemMixin",
+    "PotionBrewingBuilderMixin",
+    "WorkAtComposterAccessor",
+    "FireBlockMixin",
+    "FuelValuesMixin",
+    "GiveGiftToHeroAccessor",
+    "GiveGiftToHeroMixin",
+    "HoeItemAccessor",
+    "HoneycombItemMixin",
+    "WalkNodeEvaluatorMixin",
+    "WeatheringCopperMixin",
+    "PathfindingContextMixin",
+    "ShovelItemAccessor",
+    "VillagerAccessor",
+    "VillagerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

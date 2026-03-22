@@ -1,0 +1,49 @@
+version = getSubprojectVersion(project)
+
+loom {
+	accessWidenerPath = file("src/main/resources/fabric-biome-api-v1.accesswidener")
+}
+
+testDependencies(project, [
+	':fabric-api-base',
+	':fabric-resource-loader-v1',
+	':fabric-registry-sync-v0',
+	':fabric-data-generation-api-v1'
+])
+
+fabricApi {
+	configureDataGeneration {
+		outputDirectory = file("src/testmod/generated")
+		addToResources = false
+		strictValidation = true
+	}
+}
+
+runDatagen {
+	outputs.dir("src/testmod/generated")
+}
+
+sourceSets {
+	testmod {
+		resources {
+			srcDirs += [
+				'src/testmod/generated'
+			]
+		}
+	}
+}
+
+loom {
+	runs {
+		datagen {
+			name "Data Generation"
+			source sourceSets.testmod
+			ideConfigGenerated = true
+		}
+	}
+}
+
+// Ensure the worldgen JSONs are re-created to ensure the data-gen still works
+test.dependsOn runDatagen
+runTestmodClient.dependsOn runDatagen
+generateResources.dependsOn runDatagen

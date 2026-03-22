@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "net.fabricmc.fabric.mixin.blockview",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlockEntityMixin",
+    "BlockGetterMixin",
+    "LevelReaderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

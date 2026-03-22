@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "package": "net.fabricmc.fabric.mixin.object.builder",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlockEntityTypeMixin",
+    "DefaultAttributesAccessor",
+    "DefaultAttributesMixin",
+    "DetectorRailBlockMixin",
+    "EntityTypeBuilderMixin",
+    "EntityTypeMixin",
+    "DimensionDataStorageMixin",
+    "EntityDataSerializersAccessor",
+    "EntityDataSerializersMixin",
+    "VillagerTradesEmeraldsForVillagerTypeItemMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "required": true,
+  "package": "top.hendrixshen.magiclib.mixin.dev",
+  "plugin": "top.hendrixshen.magiclib.impl.mixin.MagicMixinPlugin",
+  "minVersion": "0.8",
+  "compatibilityLevel": "JAVA_8",
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [
+    "accessor.UtilAccessor",
+    "chunk.MinecraftServerMixin",
+    "dfu.destroy.DataFixerUpperMixin",
+    "dfu.destroy.SchemaMixin",
+    "dfu.lazy.DataFixersMixin",
+    "dfu.lazy.SharedConstantsMixin",
+    "threadtweak.DataFixersMixin",
+    "threadtweak.MinecraftServerMixin",
+    "threadtweak.UtilMixin"
+  ],
+  "client": [
+    "auth.AccountProfileKeyPairManagerMixin",
+    "auth.MinecraftMixin",
+    "dfu.lazy.MainMixin",
+    "threadtweak.ClientMainMixin",
+    "threadtweak.IntegratedServerMixin"
+  ]
+}

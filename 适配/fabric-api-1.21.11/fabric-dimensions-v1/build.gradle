@@ -1,0 +1,5 @@
+version = getSubprojectVersion(project)
+
+testDependencies(project, [
+	':fabric-resource-loader-v1'
+])

@@ -1,0 +1,15 @@
+version = getSubprojectVersion(project)
+
+loom {
+	accessWidenerPath = file("src/main/resources/fabric-registry-sync-v0.accesswidener")
+}
+
+moduleDependencies(project, [
+	'fabric-api-base',
+	'fabric-networking-api-v1'
+])
+
+testDependencies(project, [
+	':fabric-lifecycle-events-v1',
+	':fabric-command-api-v2',
+])

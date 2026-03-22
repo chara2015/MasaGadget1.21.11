@@ -1,0 +1,257 @@
+package fi.dy.masa.malilib.config.options;
+
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nullable;
+import com.google.common.collect.ImmutableList;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+
+import fi.dy.masa.malilib.MaLiLib;
+import fi.dy.masa.malilib.config.*;
+import fi.dy.masa.malilib.util.StringUtils;
+import fi.dy.masa.malilib.util.data.ImmutableCopy;
+
+public class ConfigLockedList extends ConfigBase<ConfigLockedList> implements IConfigLockedList
+{
+    IConfigLockedListType handler;
+    ImmutableList<IConfigLockedListEntry> defaultList;
+    List<IConfigLockedListEntry> values = new ArrayList<>();
+    List<IConfigLockedListEntry> lastValues = new ArrayList<>();
+
+    public ConfigLockedList(String name, IConfigLockedListType handler)
+    {
+        this(name, handler, name+" Comment?", StringUtils.splitCamelCase(name), name);
+    }
+
+    public ConfigLockedList(String name, IConfigLockedListType handler, String comment)
+    {
+        this(name, handler, comment, StringUtils.splitCamelCase(name), name);
+    }
+
+    public ConfigLockedList(String name, IConfigLockedListType handler, String comment, String prettyName)
+    {
+        this(name, handler, comment, prettyName, name);
+    }
+
+    public ConfigLockedList(String name, IConfigLockedListType handler, String comment, String prettyName, String translatedName)
+    {
+        super(ConfigType.LOCKED_LIST, name, comment, prettyName, translatedName);
+        this.handler = handler;
+        this.defaultList = handler.getDefaultEntries();
+        this.values.addAll(this.defaultList);
+        this.updateLastLockedListValue();
+    }
+
+    @Override
+    public ImmutableList<IConfigLockedListEntry> getDefaultEntries()
+    {
+        return this.defaultList;
+    }
+
+    @Override
+    public List<IConfigLockedListEntry> getEntries()
+    {
+        return this.values;
+    }
+
+    @Override
+    public List<String> getConfigKeys()
+    {
+        List<String> list = new ArrayList<>();
+
+        for (IConfigLockedListEntry entry : values)
+        {
+            list.add(entry.getDisplayName());
+        }
+
+        return list;
+    }
+
+    @Override
+    public void setEntries(List<IConfigLockedListEntry> entries)
+    {
+        if (this.values.equals(entries) == false)
+        {
+            this.updateLastLockedListValue();
+            this.values.clear();
+            entries.forEach((v) ->
+            {
+                IConfigLockedListEntry entry = this.handler.fromString(v.getStringValue());
+
+                if (entry != null)
+                {
+                    this.values.add(entry);
+                }
+            });
+
+            this.onValueChanged();
+        }
+    }
+
+    @Override
+    @Nullable
+    public IConfigLockedListEntry getEmpty()
+    {
+        return null;
+    }
+
+    @Override
+    @Nullable
+    public IConfigLockedListEntry getEntry(String key)
+    {
+        return this.handler.fromString(key);
+    }
+
+    @Override
+    public int getEntryIndex(IConfigLockedListEntry entry)
+    {
+        for (int i = 0; i < this.values.size(); i++)
+        {
+            if (this.values.get(i).equals(entry))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    @Override
+    public void setModified()
+    {
+        this.markClean();
+        this.onValueChanged();
+    }
+
+    @Override
+    public List<IConfigLockedListEntry> getLastLockedListValue()
+    {
+        return this.lastValues;
+    }
+
+    @Override
+    public void resetToDefault()
+    {
+        this.setEntries(this.defaultList);
+    }
+
+    @Override
+    public void updateLastLockedListValue()
+    {
+        this.lastValues.clear();
+        this.lastValues.addAll(ImmutableCopy.of(this.values).toList());
+    }
+
+    @Override
+    public boolean isModified()
+    {
+        return this.values.equals(this.defaultList) == false;
+    }
+
+    @Override
+    public JsonElement getAsJsonElement()
+    {
+        List<IConfigLockedListEntry> list = new ArrayList<>(this.getDefaultEntries().stream().toList());
+        JsonArray array = new JsonArray();
+
+        // Should only save 1 instance of each config
+        for (IConfigLockedListEntry val : this.values)
+        {
+            if (list.contains(val))
+            {
+                array.add(new JsonPrimitive(val.getStringValue()));
+                list.remove(val);
+            }
+        }
+
+        // Default settings are missing
+        if (list.isEmpty() == false)
+        {
+            for (IConfigLockedListEntry entry : list)
+            {
+                array.add(new JsonPrimitive(entry.getStringValue()));
+            }
+        }
+
+        return array;
+    }
+
+    @Override
+    public void setValueFromJsonElement(JsonElement element)
+    {
+        ImmutableList<IConfigLockedListEntry> oldEntries = ImmutableCopy.of(this.values).toList();
+        int sizeBefore;
+        this.values.clear();
+
+        try
+        {
+            if (element.isJsonArray())
+            {
+                JsonArray array = element.getAsJsonArray();
+
+                List<IConfigLockedListEntry> defList = new ArrayList<>(this.getDefaultEntries().stream().toList());
+                List<IConfigLockedListEntry> list = new ArrayList<>();
+
+                sizeBefore = array.size();
+
+                // Only add matches ONCE & compare with Defaults.
+                for (int i = 0; i < array.size(); i++)
+                {
+                    String temp = array.get(i).getAsString();
+                    IConfigLockedListEntry entry = this.handler.fromString(temp);
+
+                    if (entry != null && !list.contains(entry))
+                    {
+                        list.add(entry);
+                        defList.remove(entry);
+                    }
+                }
+
+                if (sizeBefore != list.size())
+                {
+                    this.markDirty();
+                }
+
+                // Default entries are missing
+                if (!defList.isEmpty())
+                {
+                    sizeBefore = list.size();
+                    list.addAll(defList);
+
+                    if (list.size() != sizeBefore)
+                    {
+                        this.markDirty();
+                    }
+                }
+
+                this.values.addAll(list);
+
+                if (!oldEntries.equals(this.values) || this.isDirty())
+                {
+                    this.markClean();
+
+                    if (!this.getLastLockedListValue().equals(this.getEntries()))
+                    {
+//                        MaLiLib.LOGGER.error("[LOCKED-LIST/{}]: setValueFromJsonElement(): LV: [{}], OV: [{}], NV: [{}]", this.getName(),
+//                                             this.getLastLockedListValue().size(),
+//                                             oldEntries.size(),
+//                                             this.getEntries().size()
+//                        );
+
+                        this.setModified();
+                    }
+                }
+            }
+            else
+            {
+                MaLiLib.LOGGER.warn("Failed to set config value for '{}' from the JSON element '{}'", this.getName(), element);
+            }
+        }
+        catch (Exception e)
+        {
+            MaLiLib.LOGGER.warn("Failed to set config value for '{}' from the JSON element '{}'", this.getName(), element, e);
+        }
+    }
+}

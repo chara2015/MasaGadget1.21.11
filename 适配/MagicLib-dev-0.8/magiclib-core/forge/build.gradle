@@ -1,0 +1,33 @@
+plugins {
+    alias(libs.plugins.replace.token)
+    alias(libs.plugins.shadow)
+
+    id("top.hendrixshen.magiclib.build-logic.core-project")
+    id("top.hendrixshen.magiclib.build-logic.process-resources")
+}
+
+repositories {
+    maven {
+        name = "Forge"
+        url = "https://maven.minecraftforge.net"
+    }
+}
+
+dependencies {
+    compileOnly("net.minecraftforge:forge:${project.property("dependencies.forge_version")}:universal")
+    compileOnly("net.minecraftforge:forge:${project.property("dependencies.forge_version")}:launcher")
+    compileOnly("net.minecraftforge:forgespi:${project.property("dependencies.forgespi_version")}")
+    compileOnly("cpw.mods:modlauncher:${project.property("dependencies.modlauncher_version")}")
+    compileOnly("org.apache.maven:maven-artifact:${project.property("dependencies.maven-artifact_version")}")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.withType(Jar).configureEach {
+    manifest.attributes(
+            "MixinConfigs": "magiclib-core-bootstrap.mixins.json"
+    )
+}

@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "net.fabricmc.fabric.mixin.registry.sync.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "BlockColorsMixin",
+    "RegistryDataCollectorMixin",
+    "ClientRegistriesDynamicRegistriesAccessor",
+    "MinecraftMixin",
+    "ParticleResourcesMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

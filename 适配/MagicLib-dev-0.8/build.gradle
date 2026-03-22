@@ -1,0 +1,176 @@
+plugins {
+    id("maven-publish")
+
+    alias(libs.plugins.grgit)
+}
+
+ext {
+    Map env = System.getenv()
+    File localPropsFile = file("${rootDir}/local.properties")
+
+    if (localPropsFile.exists()) {
+        Properties p = new Properties()
+        p.load(new FileInputStream(localPropsFile))
+        p.each { key, value ->
+            ext[key as String] = value
+        }
+    }
+
+    getEnv = {
+        return env
+    }
+
+    getOrDefault = { String key, String defaultValue ->
+        String value
+        (value = project.findProperty(key)) && !value.isEmpty() ? value : defaultValue
+    }
+
+    isGithubCI = {
+        return env.get("GITHUB_ACTION") != null
+    }
+
+    getBuildNumber = {
+        return env.GITHUB_RUN_NUMBER ? env.GITHUB_RUN_NUMBER : 0
+    }
+
+    getVersionGit = { List paths ->
+        if (grgit == null || grgit.head() == null) {
+            return "nogit"
+        }
+
+        List latestCommits = paths.isEmpty() ? grgit.log(maxCommits: 1) : grgit.log(paths: paths, maxCommits: 1)
+        return latestCommits.isEmpty() ? "uncommited" : "${latestCommits.get(0).id.substring(0, 7)}"
+    }
+
+    getVersionType = {
+        String type = getOrDefault("ow.build.environment.buildType", null)
+
+        if (type != null) {
+            return type
+        }
+
+        type = env.BUILD_TYPE
+
+        switch (type) {
+            case "BETA":
+                return "beta"
+            case "FORK":
+                return "fork"
+            case "RC":
+                return "rc"
+            case "RELEASE":
+                return "stable"
+            case "PULL_REQUEST":
+                return "pull_request"
+            default:
+                return "development"
+        }
+    }
+
+    getVersionPatch = { List paths ->
+        if (grgit == null || grgit.head() == null) {
+            return 0
+        }
+
+        List latestCommits = paths.isEmpty() ? grgit.log() : grgit.log(paths: paths)
+        return latestCommits.size()
+    }
+
+    getVersion = { Project proj ->
+        return "${proj.property("mod.version")}.${getVersionPatch(proj == rootProject ? [] : [proj.projectDir.name])}"
+    }
+
+    getVersionWithCommitHash = { Project proj ->
+        return "${getVersion(proj)}+${getVersionGit(proj == rootProject ? [] : [proj.projectDir.name])}-${getVersionType()}"
+    }
+
+    getModVersion = { Project proj ->
+        return "${getVersion(proj)}-${getVersionType()}"
+    }
+
+    getMavenArtifactVersion = { Project proj ->
+        return project.getVersionType() == "stable" ? "${getVersion(proj)}" : "${getModVersion(proj)}"
+    }
+
+    addPomMetadataInformation = { Project project, MavenPublication publication ->
+        publication.pom {
+            name.set("${project.property("mod.archives_base_name")}")
+            description.set("${project.property("mod.description")}")
+            url.set("${project.property("mod.homepage")}")
+
+            licenses {
+                license {
+                    name.set("${project.property("mod.license")}")
+                    url.set("${project.property("mod.license_url")}")
+                }
+            }
+
+            developers {
+                developer {
+                    id.set("Hendrix-Shen")
+                    name.set("Hendrix-Shen")
+                    email.set("HendrixShen@hendrixshen.top")
+                }
+
+                developer {
+                    id.set("plusls")
+                    name.set("plusls")
+                    email.set("plusls@qq.com")
+                }
+            }
+
+            scm {
+                connection.set("scm:git:${project.property("mod.sources")}.git")
+                developerConnection.set("scm:git:${project.property("mod.sources").replace("https", "ssh")}.git")
+                url.set("${project.property("mod.sources")}")
+            }
+        }
+    }
+
+    String nyanMaven_username = project.getOrDefault("secrets.nyanMaven.username", project.getEnv().NYAN_MAVEN_USERNAME)
+    String nyanMaven_password = project.getOrDefault("secrets.nyanMaven.password", project.getEnv().NYAN_MAVEN_PASSWORD)
+
+    isNyanMavenCredentialsExist = {
+        return nyanMaven_username && nyanMaven_password
+    }
+
+    credentialsNyanMaven = { MavenArtifactRepository mavenArtifactRepository ->
+        mavenArtifactRepository.credentials { PasswordCredentials passwordCredentials ->
+            username = nyanMaven_username
+            password = nyanMaven_password
+        }
+
+        mavenArtifactRepository.authentication { AuthenticationContainer authentications ->
+            BasicAuthentication
+        }
+    }
+}
+
+tasks.register("genLocalProperties") {
+    it.setGroup("${project.property("mod.id")}")
+
+    doFirst {
+        File localPropsFile = file("${rootDir}/local.properties")
+
+        if (localPropsFile.exists()) {
+            throw new IllegalStateException("local.properties file already generated. If you want to regenerate it, please delete it manually first")
+        } else {
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(localPropsFile))
+            bufferedWriter.writeLine("# Secrets")
+            bufferedWriter.writeLine("secrets.gpg.signingKey=")
+            bufferedWriter.writeLine("secrets.gpg.signingPassword=")
+            bufferedWriter.writeLine("secrets.nyanMaven.username=")
+            bufferedWriter.writeLine("secrets.nyanMaven.password=")
+            bufferedWriter.writeLine("")
+            bufferedWriter.writeLine("# Overwritten configurations")
+            bufferedWriter.writeLine("ow.build.environment.local=")
+            bufferedWriter.writeLine("ow.build.environment.buildType=")
+            bufferedWriter.writeLine("ow.game.username=")
+            bufferedWriter.writeLine("ow.game.window.width=")
+            bufferedWriter.writeLine("ow.game.window.height=")
+            bufferedWriter.close()
+
+            project.getLogger().info("local.properties generated successfully!")
+        }
+    }
+}

@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "package": "net.fabricmc.fabric.mixin.resource.conditions",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ReloadableServerResourcesMixin",
+    "DataProviderMixin",
+    "SimpleJsonResourceReloadListenerMixin",
+    "RegistryDataLoaderMixin",
+    "RegistryOpsAccessor",
+    "FileToIdConverterAccessor",
+    "PackMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

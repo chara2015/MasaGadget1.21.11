@@ -1,0 +1,13 @@
+package com.plusls.MasaGadget.mixin.accessor;
+
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
+import net.minecraft.world.item.ItemStack;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
+
+@Mixin(MinecartChest.class)
+public interface AccessorAbstractMinecartContainer {
+    @Accessor("itemStacks")
+    NonNullList<ItemStack> masa_gadget_mod$getItemStacks();
+}
