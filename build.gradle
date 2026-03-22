@@ -103,9 +103,6 @@ processResources {
 	}
 
 	from("${rootDir}/LICENSE")
-	from("${rootDir}/icon.png") {
-		into "assets/${mod_id}"
-	}
 }
 
 tasks.withType(JavaCompile).configureEach {

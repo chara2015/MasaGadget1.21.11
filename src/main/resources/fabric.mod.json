@@ -2,13 +2,13 @@
   "schemaVersion": 1,
   "id": "${mod_id}",
   "version": "${mod_version}",
-  "icon": "assets/${mod_id}/icon.png",
   "name": "${mod_name}",
   "description": "${mod_description}",
   "authors": [
     "plusls",
     "Hendrix-Shen",
-    "chara201x"
+    "chara201x",
+    "claude-opus"
   ],
   "contact": {
     "homepage": "${mod_homepage}",
@@ -26,7 +26,7 @@
     ]
   },
   "mixins": [
-    "${mod_id}.mixins.json"
+    "masa_gadget_mod.mixins.json"
   ],
   "depends": {
     "fabric": "*",
