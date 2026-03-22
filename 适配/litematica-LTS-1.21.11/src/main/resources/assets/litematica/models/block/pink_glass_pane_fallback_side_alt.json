@@ -1,7 +1,0 @@
-{
-  "parent": "litematica:block/template_glass_pane_fallback_side_alt",
-  "textures": {
-    "edge": "litematica:block/pink_glass_pane_fallback_top",
-    "pane": "litematica:block/pink_glass_fallback"
-  }
-}
