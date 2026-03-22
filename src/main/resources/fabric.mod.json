@@ -6,18 +6,9 @@
   "name": "${mod_name}",
   "description": "${mod_description}",
   "authors": [
-    {
-      "name": "Hendrix-Shen",
-      "contact": {
-        "homepage": "https://github.com/Hendrix-Shen"
-      }
-    },
-    {
-      "name": "plusls",
-      "contact": {
-        "homepage": "https://github.com/plusls"
-      }
-    }
+    "plusls",
+    "Hendrix-Shen",
+    "chara201x"
   ],
   "contact": {
     "homepage": "${mod_homepage}",
