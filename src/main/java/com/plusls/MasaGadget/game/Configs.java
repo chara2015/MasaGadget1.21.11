@@ -170,39 +170,11 @@ public class Configs {
     public static MagicConfigBoolean optimizeConfigWidgetSearch = Configs.cf.newConfigBoolean("optimizeConfigWidgetSearch", false);
 
     @Dependencies(conflict = @Dependency("jecharacters"))
-    @Config(category = ConfigCategory.MALILIB)
+    @Config(category = ConfigCategory.GENERIC)
     public static MagicConfigBoolean pinyinSouSuo = Configs.cf.newConfigBoolean("pinyinSouSuo", false);
 
     @Dependencies(conflict = @Dependency("jecharacters"))
-    @Config(category = ConfigCategory.MALILIB)
-    public static MagicConfigBoolean pinyinSouSuoFZh2Z = Configs.cf.newConfigBoolean("pinyinSouSuoFZh2Z", false);
-
-    @Dependencies(conflict = @Dependency("jecharacters"))
-    @Config(category = ConfigCategory.MALILIB)
-    public static MagicConfigBoolean pinyinSouSuoFSh2S = Configs.cf.newConfigBoolean("pinyinSouSuoFSh2S", false);
-
-    @Dependencies(conflict = @Dependency("jecharacters"))
-    @Config(category = ConfigCategory.MALILIB)
-    public static MagicConfigBoolean pinyinSouSuoFCh2C = Configs.cf.newConfigBoolean("pinyinSouSuoFCh2C", false);
-
-    @Dependencies(conflict = @Dependency("jecharacters"))
-    @Config(category = ConfigCategory.MALILIB)
-    public static MagicConfigBoolean pinyinSouSuoFAng2An = Configs.cf.newConfigBoolean("pinyinSouSuoFAng2An", false);
-
-    @Dependencies(conflict = @Dependency("jecharacters"))
-    @Config(category = ConfigCategory.MALILIB)
-    public static MagicConfigBoolean pinyinSouSuoFIng2In = Configs.cf.newConfigBoolean("pinyinSouSuoFIng2In", false);
-
-    @Dependencies(conflict = @Dependency("jecharacters"))
-    @Config(category = ConfigCategory.MALILIB)
-    public static MagicConfigBoolean pinyinSouSuoFEng2En = Configs.cf.newConfigBoolean("pinyinSouSuoFEng2En", false);
-
-    @Dependencies(conflict = @Dependency("jecharacters"))
-    @Config(category = ConfigCategory.MALILIB)
-    public static MagicConfigBoolean pinyinSouSuoFU2V = Configs.cf.newConfigBoolean("pinyinSouSuoFU2V", false);
-
-    @Dependencies(conflict = @Dependency("jecharacters"))
-    @Config(category = ConfigCategory.MALILIB)
+    @Config(category = ConfigCategory.GENERIC)
     public static MagicConfigOptionList pinyinSouSuoKeyboard = Configs.cf.newConfigOptionList("pinyinSouSuoKeyboard", PinYinSouSuoKeyboard.QUANPIN);
 
     @Config(category = ConfigCategory.MALILIB)
@@ -325,7 +297,7 @@ public class Configs {
     public static void init() {
         Configs.cm.parseConfigClass(Configs.class);
 
-        IValueChangeCallback<ConfigBoolean> pinYinCallback = configBoolean -> PinInHelper.getInstance().commitConfig();
+        IValueChangeCallback<ConfigBoolean> pinYinCallback = Configs::refreshPinyinSearchConfig;
 
         // Generic
         MagicConfigManager.setHotkeyCallback(openConfigGui, ConfigGui::openGui, true);
@@ -352,15 +324,31 @@ public class Configs {
         Configs.showOriginalConfigName.setValueChangeCallback(Configs::redrawConfigGui);
         Configs.showOriginalConfigNameScale.setValueChangeCallback(Configs::redrawConfigGui);
         Configs.pinyinSouSuo.setValueChangeCallback(pinYinCallback);
-        Configs.pinyinSouSuoFZh2Z.setValueChangeCallback(pinYinCallback);
-        Configs.pinyinSouSuoFSh2S.setValueChangeCallback(pinYinCallback);
-        Configs.pinyinSouSuoFCh2C.setValueChangeCallback(pinYinCallback);
-        Configs.pinyinSouSuoFAng2An.setValueChangeCallback(pinYinCallback);
-        Configs.pinyinSouSuoFIng2In.setValueChangeCallback(pinYinCallback);
-        Configs.pinyinSouSuoFEng2En.setValueChangeCallback(pinYinCallback);
-        Configs.pinyinSouSuoFU2V.setValueChangeCallback(pinYinCallback);
+        Configs.pinyinSouSuoKeyboard.setValueChangeCallback(configOptionList -> Configs.refreshPinyinSearchConfig());
         // Apply pinyin config on startup
+        Configs.refreshPinyinSearchConfig();
+    }
+
+    private static void refreshPinyinSearchConfig(Object ignored) {
+        refreshPinyinSearchConfig();
+    }
+
+    private static void refreshPinyinSearchConfig() {
         PinInHelper.getInstance().commitConfig();
+        rebuildClientSearchTrees();
+    }
+
+    private static void rebuildClientSearchTrees() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null || mc.getConnection() == null) {
+            return;
+        }
+
+        try {
+            mc.getConnection().updateSearchTrees();
+        } catch (Throwable ignored) {
+            // no-op
+        }
     }
 
     private static boolean redrawingConfigGui = false;

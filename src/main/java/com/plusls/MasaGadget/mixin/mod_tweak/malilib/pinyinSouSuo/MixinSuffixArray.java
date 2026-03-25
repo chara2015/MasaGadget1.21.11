@@ -2,6 +2,7 @@ package com.plusls.MasaGadget.mixin.mod_tweak.malilib.pinyinSouSuo;
 
 import com.plusls.MasaGadget.game.Configs;
 import com.plusls.MasaGadget.impl.mod_tweak.malilib.pinyinSouSuo.PinInHelper;
+import com.plusls.MasaGadget.impl.mod_tweak.malilib.pinyinSouSuo.PinYinSouSuoKeyboard;
 import me.towdium.pinin.elements.Char;
 import me.towdium.pinin.elements.Pinyin;
 import net.minecraft.client.searchtree.SuffixArray;
@@ -58,6 +59,8 @@ public abstract class MixinSuffixArray<T> {
             return;
         }
 
+        PinYinSouSuoKeyboard mode = (PinYinSouSuoKeyboard) Configs.pinyinSouSuoKeyboard.getOptionListValue();
+
         me.towdium.pinin.PinIn pinIn = PinInHelper.getInstance().getPinInInstance();
         List<List<String>> optionsByChar = new ArrayList<>();
 
@@ -74,7 +77,7 @@ public abstract class MixinSuffixArray<T> {
                         String full = PinInHelper.getInstance().normalizeBasic(py);
                         if (!full.isEmpty()) {
                             options.add(full);
-                            if (full.length() > 2) {
+                            if (mode == PinYinSouSuoKeyboard.SUPER_FUZZY && full.length() > 2) {
                                 String minusOne = full.substring(0, full.length() - 1);
                                 if (!minusOne.equals(full)) {
                                     options.add(minusOne);
@@ -103,15 +106,17 @@ public abstract class MixinSuffixArray<T> {
         Set<String> aliases = new LinkedHashSet<>();
         masa_gadget$buildAliases(optionsByChar, 0, new StringBuilder(), aliases);
 
-        // Extra cheap tolerance: one "drop-u" variant for each alias
-        List<String> snapshot = new ArrayList<>(aliases);
-        for (String alias : snapshot) {
-            if (aliases.size() >= MAX_ALIAS_COUNT) {
-                break;
-            }
-            String noU = alias.replace("u", "");
-            if (!noU.isEmpty()) {
-                aliases.add(noU);
+        if (mode == PinYinSouSuoKeyboard.SUPER_FUZZY) {
+            // Extra cheap tolerance: one "drop-u" variant for each alias
+            List<String> snapshot = new ArrayList<>(aliases);
+            for (String alias : snapshot) {
+                if (aliases.size() >= MAX_ALIAS_COUNT) {
+                    break;
+                }
+                String noU = alias.replace("u", "");
+                if (!noU.isEmpty()) {
+                    aliases.add(noU);
+                }
             }
         }
 

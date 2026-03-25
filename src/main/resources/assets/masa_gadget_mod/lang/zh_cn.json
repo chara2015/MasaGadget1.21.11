@@ -1,4 +1,4 @@
-﻿{
+{
   "masa_gadget_mod.config.category.all.name": "全部",
   "masa_gadget_mod.config.category.generic.name": "通用",
   "masa_gadget_mod.config.category.litematica.name": "Litematica",
@@ -46,7 +46,7 @@
   "masa_gadget_mod.config.option.optimizeConfigWidgetSearch.name": "优化配置搜索",
   "masa_gadget_mod.config.option.optimizeConfigWidgetSearch.comment": "支持忽略大小写，本地化文本，并且可以使用 §6modified§r 来搜索配置。",
   "masa_gadget_mod.config.option.pinyinSouSuo.name": "拼音搜索",
-  "masa_gadget_mod.config.option.pinyinSouSuo.comment": "为搜索栏提供拼音搜索支持。\n这仅对当前游戏语言为中文系列语言有效.",
+  "masa_gadget_mod.config.option.pinyinSouSuo.comment": "拼音搜索总开关。",
   "masa_gadget_mod.config.option.pinyinSouSuoFZh2Z.name": "拼音搜索-模糊拼写zh-z",
   "masa_gadget_mod.config.option.pinyinSouSuoFZh2Z.comment": "使用@config#pinyinSouSuo@时启用模糊拼写 zh <=> z。",
   "masa_gadget_mod.config.option.pinyinSouSuoFSh2S.name": "拼音搜索-模糊拼写sh-s",
@@ -61,17 +61,17 @@
   "masa_gadget_mod.config.option.pinyinSouSuoFEng2En.comment": "使用@config#pinyinSouSuo@时启用模糊拼写 eng <=> en。",
   "masa_gadget_mod.config.option.pinyinSouSuoFU2V.name": "拼音搜索-模糊拼写u-v",
   "masa_gadget_mod.config.option.pinyinSouSuoFU2V.comment": "使用@config#pinyinSouSuo@时启用模糊拼写 u <=> v。",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.name": "拼音搜索-键盘",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.comment": "使用@config#pinyinSouSuo@时检查器所用的键盘.",
+  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.name": "拼音搜索模式",
+  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.comment": "全拼：仅全拼/首字母匹配。\n模糊：统一开启 ang-an / ing-in / eng-en / zh-z / sh-s / ch-c / u-v 互通。\n高度模糊：在模糊基础上，额外允许每个音节少打一个末尾字母、并提供 drop-u 混拼容错（如 xjihjijian）。",
   "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.QUANPIN": "全拼",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.DAQIAN": "大千式",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.XIAOHE": "小鹤",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.ZIRANMA": "自然码",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.SOUGOU": "搜狗",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.GUOBIAO": "国标",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.MICROSOFT": "微软",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.PINYINPP": "双拼",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.ZIGUANG": "紫光",
+  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.FUZZY": "模糊",
+  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.SUPER_FUZZY": "高度模糊",
+
+
+
+
+
+
   "masa_gadget_mod.config.option.showOriginalConfigName.name": "显示原始配置名称",
   "masa_gadget_mod.config.option.showOriginalConfigName.comment": "如果配置名称被翻译，将显示原始配置名称。\n如果翻译不存在，则不会显示。",
   "masa_gadget_mod.config.option.showOriginalConfigNameScale.name": "显示原始配置名称缩放",

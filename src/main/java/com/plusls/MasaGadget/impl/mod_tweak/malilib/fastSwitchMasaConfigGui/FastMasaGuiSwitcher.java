@@ -9,6 +9,7 @@ import fi.dy.masa.malilib.interfaces.IStringValue;
 import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import org.jetbrains.annotations.ApiStatus;
 import top.hendrixshen.magiclib.MagicLib;
 
@@ -130,7 +131,8 @@ public class FastMasaGuiSwitcher {
                     return;
                 }
 
-                Screen screen = configScreenFactoryCompat.create(mc.screen);
+                Screen parent = mc.screen == null ? new TitleScreen() : mc.screen;
+                Screen screen = configScreenFactoryCompat.create(parent);
 
                 if (!(screen instanceof GuiConfigsBase)) {
                     return;
