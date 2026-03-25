@@ -4,15 +4,7 @@ import com.plusls.MasaGadget.SharedConstants;
 import top.hendrixshen.magiclib.api.malilib.config.option.EnumOptionEntry;
 
 public enum PinYinSouSuoKeyboard implements EnumOptionEntry {
-    QUANPIN,
-    DAQIAN,
-    XIAOHE,
-    ZIRANMA,
-    SOUGOU,
-    GUOBIAO,
-    MICROSOFT,
-    PINYINPP,
-    ZIGUANG;
+    QUANPIN;
 
     public static final PinYinSouSuoKeyboard DEFAULT = PinYinSouSuoKeyboard.QUANPIN;
 
