@@ -62,7 +62,7 @@
   "masa_gadget_mod.config.option.pinyinSouSuoFU2V.name": "拼音搜索-模糊拼写u-v",
   "masa_gadget_mod.config.option.pinyinSouSuoFU2V.comment": "使用@config#pinyinSouSuo@时启用模糊拼写 u <=> v。",
   "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.name": "拼音搜索模式",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.comment": "全拼：仅全拼/首字母匹配。\n模糊：统一开启 ang-an / ing-in / eng-en / zh-z / sh-s / ch-c / u-v 互通。\n高度模糊：在模糊基础上，额外允许每个音节少打一个末尾字母、并提供 drop-u 混拼容错（如 xjihjijian）。",
+  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.comment": "全拼：仅全拼/首字母匹配。\n模糊：统一开启 ang-an / ing-in / eng-en / zh-z / sh-s / ch-c / u-v 互通。\n高度模糊：在模糊基础上，额外允许每个音节少打一个末尾字母、并提供混拼容错。",
   "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.QUANPIN": "全拼",
   "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.FUZZY": "模糊",
   "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.SUPER_FUZZY": "高度模糊",

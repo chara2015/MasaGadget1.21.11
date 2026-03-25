@@ -10,7 +10,7 @@ public final class ModInfo {
 
     public static final String MOD_ID          = "masa_gadget_mod";
     public static final String MOD_NAME        = "MasaGadget";
-    public static final String MOD_VERSION     = "0.0.5";
+    public static final String MOD_VERSION     = "0.0.6";
     public static final String MOD_DESCRIPTION = "Added some features to the Masa collection of mods.";
     public static final String MOD_AUTHORS     = "plusls, Hendrix-Shen, chara201x, claude-opus4.6";
     public static final String MOD_LICENSE     = "LGPL-3.0";

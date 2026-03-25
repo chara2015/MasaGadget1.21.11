@@ -62,7 +62,7 @@
   "masa_gadget_mod.config.option.pinyinSouSuoFU2V.name": "pinyinSouSuoFU2V",
   "masa_gadget_mod.config.option.pinyinSouSuoFU2V.comment": "Fuzzy spelling u with @config#pinyinSouSuo@.",
   "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.name": "pinyinSouSuoMode",
-  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.comment": "QUANPIN: pure full-pinyin/initial matching. FUZZY: enable all equivalent fuzzy rules (ang-an / ing-in / eng-en / zh-z / sh-s / ch-c / u-v). SUPER_FUZZY: FUZZY + missing-last-letter and drop-u mixed tolerance (eg xjihjijian).",
+  "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.comment": "QUANPIN: pure full-pinyin/initial matching. FUZZY: enable all equivalent fuzzy rules (ang-an / ing-in / eng-en / zh-z / sh-s / ch-c / u-v). SUPER_FUZZY: FUZZY + missing-last-letter and mixed-spelling tolerance.",
   "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.QUANPIN": "QUANPIN",
   "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.FUZZY": "FUZZY",
   "masa_gadget_mod.config.option.pinyinSouSuoKeyboard.value.SUPER_FUZZY": "SUPER_FUZZY",

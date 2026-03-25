@@ -35,6 +35,7 @@
     "mod_tweak.malilib.optimizeConfigWidgetSearch.MixinWidgetListConfigOptions",
     "mod_tweak.malilib.pinyinSouSuo.MixinSuffixArray",
     "mod_tweak.malilib.pinyinSouSuo.MixinWidgetListBase",
+    "mod_tweak.jei.pinyinSouSuo.MixinJeiElementSearch",,
     "mod_tweak.malilib.showOriginalConfigName.MixinWidgetConfigOption",
     "mod_tweak.malilib.showOriginalConfigName.MixinWidgetListConfigOptions",
     "mod_tweak.minihud.backportI18nSupport.MixinInfoToggle",

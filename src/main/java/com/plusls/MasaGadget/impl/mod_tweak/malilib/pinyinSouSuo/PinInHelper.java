@@ -9,6 +9,8 @@ import me.towdium.pinin.Keyboard;
 import me.towdium.pinin.PinIn;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -42,6 +44,14 @@ public class PinInHelper {
         config.fCh2C(fuzzy);
         config.fU2V(fuzzy);
         config.commit();
+        // Pre-warm normalizeBasic to avoid first-call JIT stutter
+        warmUpNormalizer();
+    }
+
+    private static void warmUpNormalizer() {
+        // Run a dummy normalization to force JIT compilation before user interaction
+        String dummy = normalizeBasicStatic("\u4e0b\u754c"); // \u4e0b\u754c = \u4e0b\u754c (xia jie)
+        if (dummy.isEmpty()) { /* prevent DCE */ }
     }
 
     public boolean contains(String s1, String s2) {
@@ -61,8 +71,12 @@ public class PinInHelper {
         if (normalizedQuery.isEmpty()) {
             return true;
         }
+
+        boolean superFuzzy = Configs.pinyinSouSuoKeyboard.getOptionListValue() == PinYinSouSuoKeyboard.SUPER_FUZZY;
         StringBuilder full = new StringBuilder();
         StringBuilder initials = new StringBuilder();
+        List<String> syllables = superFuzzy ? new ArrayList<>() : null;
+
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
             boolean appended = false;
@@ -77,31 +91,115 @@ public class PinInHelper {
                         String py = pinyin.toString();
                         if (py != null && !py.isEmpty()) {
                             String normalizedPy = normalizePinyin(py.toLowerCase());
-                            full.append(normalizedPy);
-                            initials.append(normalizedPy.charAt(0));
-                            appended = true;
+                            if (!normalizedPy.isEmpty()) {
+                                full.append(normalizedPy);
+                                initials.append(normalizedPy.charAt(0));
+                                if (superFuzzy) {
+                                    syllables.add(normalizedPy);
+                                }
+                                appended = true;
+                            }
                             break;
                         }
                     }
                 }
             }
             if (!appended) {
-                char lower = Character.toLowerCase(c);
-                full.append(lower);
-                initials.append(lower);
+                String normalized = normalizePinyin(String.valueOf(Character.toLowerCase(c)));
+                if (!normalized.isEmpty()) {
+                    full.append(normalized);
+                    initials.append(normalized.charAt(0));
+                }
             }
         }
+
         String fullStr = full.toString();
         String initialsStr = initials.toString();
-        return fullStr.contains(normalizedQuery) || initialsStr.contains(normalizedQuery);
+        if (fullStr.contains(normalizedQuery) || initialsStr.contains(normalizedQuery)) {
+            return true;
+        }
+
+        return superFuzzy && containsBySyllablePrefixDp(syllables, normalizedQuery);
+    }
+
+    private static boolean containsBySyllablePrefixDp(List<String> syllables, String query) {
+        if (syllables == null || syllables.isEmpty() || query.isEmpty()) {
+            return false;
+        }
+
+        int n = syllables.size();
+        int m = query.length();
+        for (int start = 0; start < n; start++) {
+            boolean[][] dp = new boolean[n + 1][m + 1];
+            dp[start][0] = true;
+
+            for (int i = start; i < n; i++) {
+                for (int j = 0; j <= m; j++) {
+                    if (!dp[i][j]) {
+                        continue;
+                    }
+                    if (j == m) {
+                        return true;
+                    }
+
+                    String token = syllables.get(i);
+                    int max = Math.min(token.length(), m - j);
+                    for (int len = 1; len <= max; len++) {
+                        if (!query.regionMatches(j, token, 0, len)) {
+                            break;
+                        }
+                        dp[i + 1][j + len] = true;
+                    }
+
+                    String dropU = token.replace("u", "");
+                    if (!dropU.isEmpty() && !dropU.equals(token)) {
+                        int maxDropU = Math.min(dropU.length(), m - j);
+                        for (int len = 1; len <= maxDropU; len++) {
+                            if (!query.regionMatches(j, dropU, 0, len)) {
+                                break;
+                            }
+                            dp[i + 1][j + len] = true;
+                        }
+                    }
+                }
+            }
+
+            if (dp[n][m]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Static variant used for warm-up (avoids instance state dependency)
+    private static String normalizeBasicStatic(String py) {
+        py = py.toLowerCase(Locale.ROOT);
+        py = py.replace('\u00fc', 'v');
+        String nfd = Normalizer.normalize(py, Normalizer.Form.NFD);
+        StringBuilder sb = new StringBuilder(nfd.length());
+        for (int i = 0; i < nfd.length(); i++) {
+            char c = nfd.charAt(i);
+            if (Character.getType(c) != Character.NON_SPACING_MARK && c >= 'a' && c <= 'z') {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     public String normalizeBasic(String py) {
         py = py.toLowerCase(Locale.ROOT);
-        py = py.replace('ü', 'v');
-        py = Normalizer.normalize(py, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
-        py = py.replaceAll("[^a-z]", "");
-        return py;
+        py = py.replace('\u00fc', 'v');
+        // No-regex path: avoids pattern compile cost on first call
+        String nfd = Normalizer.normalize(py, Normalizer.Form.NFD);
+        StringBuilder sb = new StringBuilder(nfd.length());
+        for (int i = 0; i < nfd.length(); i++) {
+            char c = nfd.charAt(i);
+            if (Character.getType(c) != Character.NON_SPACING_MARK && c >= 'a' && c <= 'z') {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     public String normalizePinyin(String py) {

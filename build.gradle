@@ -69,6 +69,7 @@ dependencies {
 	modCompileOnly "maven.modrinth:litematica:${project.litematica_version}"
 	modCompileOnly "maven.modrinth:minihud:${project.minihud_version}"
 	modCompileOnly "maven.modrinth:tweakeroo:${project.tweakeroo_version}"
+	modCompileOnly files(project.jei_jar)
 }
 
 loom {
