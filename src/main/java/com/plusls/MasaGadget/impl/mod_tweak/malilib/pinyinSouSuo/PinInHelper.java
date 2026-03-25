@@ -18,6 +18,8 @@ public class PinInHelper {
     private static final PinInHelper instance = new PinInHelper();
     private static final Map<PinYinSouSuoKeyboard, Keyboard> keyboardMapping = ImmutableMap.<PinYinSouSuoKeyboard, Keyboard>builder()
             .put(PinYinSouSuoKeyboard.QUANPIN, Keyboard.QUANPIN)
+            .put(PinYinSouSuoKeyboard.FUZZY, Keyboard.QUANPIN)
+            .put(PinYinSouSuoKeyboard.SUPER_FUZZY, Keyboard.QUANPIN)
             .build();
 
     private final PinIn pinIn = new PinIn().config().accelerate(true).commit();
@@ -28,14 +30,17 @@ public class PinInHelper {
 
     public void commitConfig() {
         PinIn.Config config = this.pinIn.config();
-        config.keyboard(PinInHelper.keyboardMapping.getOrDefault((PinYinSouSuoKeyboard) Configs.pinyinSouSuoKeyboard.getOptionListValue(), Keyboard.QUANPIN));
-        config.fZh2Z(Configs.pinyinSouSuoFZh2Z.getBooleanValue());
-        config.fSh2S(Configs.pinyinSouSuoFSh2S.getBooleanValue());
-        config.fCh2C(Configs.pinyinSouSuoFCh2C.getBooleanValue());
-        config.fAng2An(Configs.pinyinSouSuoFAng2An.getBooleanValue());
-        config.fIng2In(Configs.pinyinSouSuoFIng2In.getBooleanValue());
-        config.fEng2En(Configs.pinyinSouSuoFEng2En.getBooleanValue());
-        config.fU2V(Configs.pinyinSouSuoFU2V.getBooleanValue());
+        PinYinSouSuoKeyboard mode = (PinYinSouSuoKeyboard) Configs.pinyinSouSuoKeyboard.getOptionListValue();
+        config.keyboard(PinInHelper.keyboardMapping.getOrDefault(mode, Keyboard.QUANPIN));
+
+        boolean fuzzy = mode == PinYinSouSuoKeyboard.FUZZY || mode == PinYinSouSuoKeyboard.SUPER_FUZZY;
+        config.fAng2An(fuzzy);
+        config.fIng2In(fuzzy);
+        config.fEng2En(fuzzy);
+        config.fZh2Z(fuzzy);
+        config.fSh2S(fuzzy);
+        config.fCh2C(fuzzy);
+        config.fU2V(fuzzy);
         config.commit();
     }
 
@@ -45,7 +50,6 @@ public class PinInHelper {
         }
         String normalizedQuery = normalizePinyin(s2.toLowerCase());
 
-        // Try PinIn native search first (for compatibility and speed)
         if (this.pinIn.contains(s1, normalizedQuery)) {
             return true;
         }
@@ -92,11 +96,6 @@ public class PinInHelper {
         return fullStr.contains(normalizedQuery) || initialsStr.contains(normalizedQuery);
     }
 
-    /**
-     * Apply fuzzy pinyin normalization based on current config flags.
-     * Both the text's pinyin and the query are normalized the same way,
-     * so fuzzy matching works correctly.
-     */
     public String normalizeBasic(String py) {
         py = py.toLowerCase(Locale.ROOT);
         py = py.replace('ü', 'v');

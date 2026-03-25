@@ -4,7 +4,9 @@ import com.plusls.MasaGadget.SharedConstants;
 import top.hendrixshen.magiclib.api.malilib.config.option.EnumOptionEntry;
 
 public enum PinYinSouSuoKeyboard implements EnumOptionEntry {
-    QUANPIN;
+    QUANPIN,
+    FUZZY,
+    SUPER_FUZZY;
 
     public static final PinYinSouSuoKeyboard DEFAULT = PinYinSouSuoKeyboard.QUANPIN;
 
