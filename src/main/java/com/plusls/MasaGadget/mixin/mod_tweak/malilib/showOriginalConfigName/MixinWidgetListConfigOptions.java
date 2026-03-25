@@ -30,7 +30,7 @@ public abstract class MixinWidgetListConfigOptions extends WidgetListConfigOptio
     private int recalcMaxNameLength(int width, @Local GuiConfigsBase.ConfigOptionWrapper wrapper) {
         if (Configs.showOriginalConfigName.getBooleanValue()) {
             String displayName = MiscUtil.getStringWithoutFormat(Objects.requireNonNull(
-                    wrapper.getConfig()).getConfigGuiDisplayName());
+                    wrapper.getConfig()).getTranslatedName());
             String name = wrapper.getConfig().getName();
 
             if (!displayName.equals(name)) {

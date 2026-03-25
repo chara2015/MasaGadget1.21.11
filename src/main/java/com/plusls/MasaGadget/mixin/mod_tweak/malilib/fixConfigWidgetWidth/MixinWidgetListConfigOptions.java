@@ -66,7 +66,7 @@ public abstract class MixinWidgetListConfigOptions extends WidgetListConfigOptio
 
         for (GuiConfigsBase.ConfigOptionWrapper wrapper : wrappers) {
             if (wrapper.getType() == GuiConfigsBase.ConfigOptionWrapper.Type.CONFIG) {
-                String label = Objects.requireNonNull(wrapper.getConfig()).getConfigGuiDisplayName();
+                String label = Objects.requireNonNull(wrapper.getConfig()).getTranslatedName();
                 maxWidth = Math.max(maxWidth, this.getStringWidth(Configs.fixConfigWidgetWidthExpand.getBooleanValue() ?
                         StringUtils.translate(label) : label));
             }

@@ -41,11 +41,11 @@ public abstract class MixinFeatureToggle implements IHotkeyTogglable {
     }
 
     @Inject(
-            method = "getConfigGuiDisplayName",
+            method = "getTranslatedName",
             at = @At("HEAD"),
             cancellable = true
     )
-    private void patchGetConfigGuiDisplayName(CallbackInfoReturnable<String> cir) {
+    private void patchgetTranslatedName(CallbackInfoReturnable<String> cir) {
         if (Configs.backportI18nSupport.getBooleanValue()) {
             cir.setReturnValue(I18n.translateOrFallback("config.name." + this.getName().toLowerCase(),
                     this.getName()));

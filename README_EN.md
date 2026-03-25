@@ -9,4 +9,3 @@ This project is a fork of the original repository, migrated to Minecraft 1.21.11
 It contains significant modifications and is currently in an experimental stage. Bugs and issues are to be expected.
 
 Licensed under the LGPL-3.0 License.
-This project is not affiliated with the original author.

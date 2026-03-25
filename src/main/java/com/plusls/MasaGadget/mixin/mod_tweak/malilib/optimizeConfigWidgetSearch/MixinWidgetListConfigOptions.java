@@ -48,7 +48,7 @@ public abstract class MixinWidgetListConfigOptions extends WidgetListConfigOptio
 
         if (config != null) {
             if (config instanceof IConfigResettable && ((IConfigResettable) config).isModified()) {
-                cir.setReturnValue(ImmutableList.of(config.getConfigGuiDisplayName().toLowerCase(), config.getName().toLowerCase(), "modified"));
+                cir.setReturnValue(ImmutableList.of(config.getTranslatedName().toLowerCase(), config.getName().toLowerCase(), "modified"));
             } else {
                 cir.setReturnValue(ImmutableList.of(config.getConfigGuiDisplayName().toLowerCase(), config.getName().toLowerCase()));
             }

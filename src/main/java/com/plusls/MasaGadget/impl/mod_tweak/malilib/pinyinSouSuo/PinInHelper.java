@@ -46,6 +46,75 @@ public class PinInHelper {
     }
 
     public boolean contains(String s1, String s2) {
-        return this.pinIn.contains(s1, s2);
+        // First try PinIn's native contains (works for single syllable pinyin)
+        if (this.pinIn.contains(s1, s2)) {
+            return true;
+        }
+        // Fallback: convert s1 to full pinyin and initials, then do String.contains
+        // This handles multi-character pinyin like "caofangkuai" for "草方块"
+        return containsByConvertedPinyin(s1, s2);
+    }
+
+    private boolean containsByConvertedPinyin(String text, String query) {
+        if (query.isEmpty()) return true;
+        // Build full pinyin and initials for the text
+        StringBuilder full = new StringBuilder();
+        StringBuilder initials = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c >= '\u4e00' && c <= '\u9fff') {
+                me.towdium.pinin.elements.Char charData = this.pinIn.getChar(c);
+                me.towdium.pinin.elements.Pinyin[] pinyins = charData != null ? charData.pinyins() : null;
+                if (pinyins != null && pinyins.length > 0) {
+                    String py = pinyins[0].toString();
+                    if (py != null && !py.isEmpty()) {
+                        // Apply fuzzy pinyin normalization to the pinyin string
+                        py = normalizePinyin(py);
+                        full.append(py);
+                        initials.append(py.charAt(0));
+                        continue;
+                    }
+                }
+            }
+            full.append(c);
+            initials.append(c);
+        }
+        // Also normalize the query with the same fuzzy rules
+        String normalizedQuery = normalizePinyin(query);
+        String fullStr = full.toString();
+        String initialsStr = initials.toString();
+        return fullStr.contains(normalizedQuery) || initialsStr.contains(normalizedQuery);
+    }
+
+    /**
+     * Apply fuzzy pinyin normalization based on current config flags.
+     * Both the text's pinyin and the query are normalized the same way,
+     * so fuzzy matching works correctly.
+     */
+    public String normalizePinyin(String py) {
+        // Apply each fuzzy rule: both directions (e.g. zh->z and z->zh are handled
+        // by normalizing both sides to the same form, here we normalize to the shorter form)
+        if (this.pinIn.fZh2Z()) {
+            py = py.replace("zh", "z");
+        }
+        if (this.pinIn.fSh2S()) {
+            py = py.replace("sh", "s");
+        }
+        if (this.pinIn.fCh2C()) {
+            py = py.replace("ch", "c");
+        }
+        if (this.pinIn.fAng2An()) {
+            py = py.replace("ang", "an");
+        }
+        if (this.pinIn.fIng2In()) {
+            py = py.replace("ing", "in");
+        }
+        if (this.pinIn.fEng2En()) {
+            py = py.replace("eng", "en");
+        }
+        if (this.pinIn.fU2V()) {
+            py = py.replace("u", "v");
+        }
+        return py;
     }
 }

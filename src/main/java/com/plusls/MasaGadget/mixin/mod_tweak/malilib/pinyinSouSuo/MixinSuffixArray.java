@@ -63,6 +63,7 @@ public abstract class MixinSuffixArray<T> {
                 if (pinyins != null && pinyins.length > 0) {
                     String py = pinyins[0].toString();
                     if (py != null && !py.isEmpty()) {
+                        py = PinInHelper.getInstance().normalizePinyin(py);
                         initials.append(py.charAt(0));
                         full.append(py);
                         continue;

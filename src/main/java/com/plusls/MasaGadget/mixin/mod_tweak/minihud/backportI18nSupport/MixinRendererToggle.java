@@ -38,13 +38,13 @@ public abstract class MixinRendererToggle implements IHotkeyTogglable {
     }
 
     @Override
-    public String getConfigGuiDisplayName() {
-        return IHotkeyTogglable.super.getConfigGuiDisplayName();
+    public String getTranslatedName() {
+        return this.getName();
     }
 
     @SuppressWarnings({"MixinAnnotationTarget", "UnresolvedMixinReference"})
-    @Inject(method = "getConfigGuiDisplayName", at = @At("HEAD"), cancellable = true)
-    private void patchGetConfigGuiDisplayName(CallbackInfoReturnable<String> cir) {
+    @Inject(method = "getTranslatedName", at = @At("HEAD"), cancellable = true)
+    private void patchgetTranslatedName(CallbackInfoReturnable<String> cir) {
         if (Configs.backportI18nSupport.getBooleanValue()) {
             cir.setReturnValue(I18n.translateOrFallback("config.name." + this.getName().toLowerCase(),
                     this.getName()));

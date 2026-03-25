@@ -46,6 +46,10 @@ import java.util.Objects;
 //$$ import net.minecraft.world.item.UseOnContext;
 //#endif
 
+//#if MC <= 11802
+import net.minecraft.client.multiplayer.ClientLevel;
+//#endif
+
 @SuppressWarnings("DefaultAnnotationParam")
 @Dependencies(require = @Dependency(ModId.litematica))
 @Mixin(value = WorldUtils.class, priority = 900, remap = false)
@@ -109,7 +113,8 @@ public class MixinWorldUtils {
                     target = "Lfi/dy/masa/litematica/util/WorldUtils;cacheEasyPlacePosition(Lnet/minecraft/core/BlockPos;)V",
                     remap = true
             ),
-            locals = LocalCapture.CAPTURE_FAILHARD
+            locals = LocalCapture.CAPTURE_FAILHARD,
+            require = 0
     )
     private static void fixDoEasyPlaceAction0(Minecraft mc, CallbackInfoReturnable<InteractionResult> cir,
                                               RayTraceUtils.RayTraceWrapper traceWrapper) {
@@ -129,8 +134,6 @@ public class MixinWorldUtils {
         InteractionHand hand = EntityUtils.getUsedHandForItem(Objects.requireNonNull(mc.player), stack);
         PlayerCompat playerCompat = PlayerCompat.of(mc.player);
         Vec3 hitPos = trace.getLocation();
-        //#if MC > 12104
-        //$$ Direction newSide = BlockUtils.getFirstPropertyFacingValue(stateSchematic).orElse(null);
         Direction newSide = BlockUtils.getFirstPropertyFacingValue(stateSchematic).orElse(null);
         MixinWorldUtils.masa_gadget_mod$easyPlaceActionNewSide.set(newSide);
         MixinWorldUtils.masa_gadget_mod$easyPlaceActionOldYaw.set(playerCompat.getYRot());
@@ -154,8 +157,6 @@ public class MixinWorldUtils {
             BlockState testState = stateSchematic.getBlock().getStateForPlacement(itemPlacementContext);
 
             if (testState != null) {
-                //#if MC > 12104
-                //$$ Direction testDirection = BlockUtils.getFirstPropertyFacingValue(testState).orElse(null);
                 Direction testDirection = BlockUtils.getFirstPropertyFacingValue(testState).orElse(null);
 
                 if (testDirection != null && testDirection != newSide) {
@@ -200,7 +201,7 @@ public class MixinWorldUtils {
             method = "doEasyPlaceAction",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;useItemOn(Lnet/minecraft/client/player/LocalPlayer;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/InteractionResult;",
+            target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;useItemOn(Lnet/minecraft/client/player/LocalPlayer;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/InteractionResult;",
                     ordinal = 0,
                     remap = true
             )
@@ -237,7 +238,7 @@ public class MixinWorldUtils {
             method = "doEasyPlaceAction",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;useItemOn(Lnet/minecraft/client/player/LocalPlayer;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/InteractionResult;",
+            target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;useItemOn(Lnet/minecraft/client/player/LocalPlayer;Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/phys/BlockHitResult;)Lnet/minecraft/world/InteractionResult;",
                     shift = At.Shift.AFTER,
                     ordinal = 0,
                     remap = true

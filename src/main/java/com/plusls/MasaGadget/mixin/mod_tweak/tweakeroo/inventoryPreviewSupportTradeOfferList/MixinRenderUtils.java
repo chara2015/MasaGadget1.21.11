@@ -35,7 +35,7 @@ public class MixinRenderUtils {
     private static final int masa_gadget$maxTradeOfferSize = 9;
 
     @ModifyVariable(
-            method = "renderInventoryOverlay",
+            method = "renderPlayerInventoryOverlay",
             at = @At(
                     value = "INVOKE",
                     target = "Lfi/dy/masa/malilib/util/GuiUtils;getScaledWindowWidth()I",

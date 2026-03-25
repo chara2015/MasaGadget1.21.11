@@ -18,7 +18,7 @@ import top.hendrixshen.magiclib.api.dependency.annotation.Dependency;
 @Mixin(value = RenderUtils.class, remap = false)
 public class MixinMixinRenderUtils {
     @Redirect(
-            method = "renderInventoryOverlay",
+            method = "renderPlayerInventoryOverlay",
             at = @At(
                     value = "INVOKE",
                     target = "Lfi/dy/masa/malilib/util/InventoryUtils;getInventory(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/Container;",

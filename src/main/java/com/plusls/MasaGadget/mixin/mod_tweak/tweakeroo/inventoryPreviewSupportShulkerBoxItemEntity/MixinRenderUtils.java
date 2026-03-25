@@ -44,7 +44,7 @@ public abstract class MixinRenderUtils {
     private static final org.slf4j.Logger masa_gadget$logger = com.mojang.logging.LogUtils.getLogger();
 
     @ModifyVariable(
-            method = "renderInventoryOverlay",
+            method = "renderPlayerInventoryOverlay",
             at = @At(
                     value = "INVOKE",
                     target = "Lfi/dy/masa/malilib/util/GuiUtils;getScaledWindowWidth()I",

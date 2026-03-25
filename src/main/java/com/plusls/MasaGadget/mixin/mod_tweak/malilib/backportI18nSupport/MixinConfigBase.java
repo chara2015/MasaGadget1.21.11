@@ -47,13 +47,13 @@ public abstract class MixinConfigBase implements IConfigBase {
 
     @Intrinsic
     @Override
-    public String getConfigGuiDisplayName() {
-        return IConfigBase.super.getConfigGuiDisplayName();
+    public String getTranslatedName() {
+        return this.getName();
     }
 
     @SuppressWarnings({"MixinAnnotationTarget", "UnresolvedMixinReference"})
-    @Inject(method = "getConfigGuiDisplayName", at = @At("HEAD"), cancellable = true)
-    private void patchGetConfigGuiDisplayName(CallbackInfoReturnable<String> cir) {
+    @Inject(method = "getTranslatedName", at = @At("HEAD"), cancellable = true)
+    private void patchgetTranslatedName(CallbackInfoReturnable<String> cir) {
         if (MixinConfigBase.masa_gadget_mod$tweakerMoreIConfigBaseClass
                 .filter(clazz -> clazz.isInstance(this)).isPresent()) {
             cir.setReturnValue(I18n.tr("tweakermore.config.".concat(this.getName())));

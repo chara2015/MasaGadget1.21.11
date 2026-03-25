@@ -3,21 +3,15 @@ package com.plusls.MasaGadget.impl.feature.entityInfo;
 import com.google.common.collect.Lists;
 import com.plusls.MasaGadget.util.PcaSyncProtocol;
 import com.plusls.MasaGadget.util.VillagerDataUtil;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Holder;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.*;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.npc.villager.VillagerProfession;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.item.trading.MerchantOffer;
 import org.jetbrains.annotations.NotNull;
 import top.hendrixshen.magiclib.api.compat.minecraft.world.item.ItemStackCompat;
@@ -26,12 +20,27 @@ import top.hendrixshen.magiclib.util.minecraft.ComponentUtil;
 import java.util.Collections;
 import java.util.List;
 
+//#if MC > 12104
+//$$ import net.minecraft.resources.ResourceKey;
+//#endif
+
+//#if MC > 12006
+//$$ import net.minecraft.tags.EnchantmentTags;
+//#endif
+
+//#if MC > 12004
+//$$ import it.unimi.dsi.fastutil.objects.Object2IntMap;
+//$$ import net.minecraft.core.Holder;
+//$$ import net.minecraft.world.item.enchantment.ItemEnchantments;
+//#else
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import net.minecraft.core.Holder;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+//#endif
+
 public class VillagerTradeEnchantedBookInfo {
     public static @NotNull List<Component> getInfo(@NotNull Villager villager) {
-        ResourceKey<VillagerProfession> profession = VillagerDataUtil.getVillagerProfession(villager);
-        ResourceKey<VillagerProfession> profLibrarian = VillagerProfession.LIBRARIAN;
-
-        if (!profLibrarian.equals(profession)) {
+        if (VillagerDataUtil.getVillagerProfession(villager) != VillagerProfession.LIBRARIAN) {
             return Collections.emptyList();
         }
 
@@ -39,9 +48,14 @@ public class VillagerTradeEnchantedBookInfo {
             return Lists.newArrayList(ComponentUtil.tr("masa_gadget_mod.message.no_data").withStyle(ChatFormatting.YELLOW));
         }
 
+        net.minecraft.world.item.trading.MerchantOffers offers = ((com.plusls.MasaGadget.mixin.accessor.AccessorAbstractVillager) villager).masa_gadget_mod$getOffers();
+        if (offers == null || offers.isEmpty()) {
+            return Lists.newArrayList(ComponentUtil.tr("masa_gadget_mod.message.no_data").withStyle(ChatFormatting.YELLOW));
+        }
+
         List<Component> ret = Lists.newArrayList();
 
-        for (MerchantOffer tradeOffer : villager.getOffers()) {
+        for (MerchantOffer tradeOffer : offers) {
             ItemStack sellItem = tradeOffer.getResult();
             ItemStackCompat sellItemCompat = ItemStackCompat.of(sellItem);
 
@@ -57,7 +71,7 @@ public class VillagerTradeEnchantedBookInfo {
                 int minCost = 2 + 3 * level;
                 int maxCost = minCost + 4 + level * 10;
 
-                if (entry.getKey().is(EnchantmentTags.DOUBLE_TRADE_PRICE)) {
+                if (entry.getKey().is(net.minecraft.tags.EnchantmentTags.DOUBLE_TRADE_PRICE)) {
                     minCost *= 2;
                     maxCost *= 2;
                 }

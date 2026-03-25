@@ -37,7 +37,7 @@ public abstract class MixinWidgetConfigOption extends WidgetConfigOptionBase<Gui
             return;
         }
 
-        String displayName = MiscUtil.getStringWithoutFormat(config.getConfigGuiDisplayName());
+        String displayName = MiscUtil.getStringWithoutFormat(config.getTranslatedName());
 
         if (displayName.equals(config.getName())) {
             original.call(instance, x, y, zLevel, labelWidth, configWidth, lines);

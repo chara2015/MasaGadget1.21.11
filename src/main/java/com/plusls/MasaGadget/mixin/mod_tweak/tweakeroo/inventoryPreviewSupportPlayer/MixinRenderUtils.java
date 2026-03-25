@@ -25,7 +25,7 @@ import top.hendrixshen.magiclib.libs.com.llamalad7.mixinextras.sugar.Local;
 @Mixin(value = RenderUtils.class, remap = false)
 public abstract class MixinRenderUtils {
     @ModifyVariable(
-            method = "renderInventoryOverlay",
+            method = "renderPlayerInventoryOverlay",
             at = @At(
                     value = "INVOKE",
                     target = "Lfi/dy/masa/malilib/util/GuiUtils;getScaledWindowWidth()I",
