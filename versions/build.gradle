@@ -1,0 +1,142 @@
+plugins {
+	id 'fabric-loom' version '1.15.5'
+	id 'maven-publish'
+}
+
+// Read mod metadata from ModInfo.java (single source of truth)
+def modInfoFile = rootProject.file('src/main/java/com/plusls/MasaGadget/ModInfo.java')
+def modInfoText = modInfoFile.text
+def readModInfo = { String key ->
+	(modInfoText =~ /MOD_${key}\s*=\s*"([^"]+)"/).with { m -> m.find() ? m.group(1) : '' }
+}
+
+def mod_version     = readModInfo('VERSION')
+def mod_name        = readModInfo('NAME')
+def mod_id          = readModInfo('ID')
+def mod_description = readModInfo('DESCRIPTION')
+def mod_license     = readModInfo('LICENSE')
+def mod_homepage    = readModInfo('HOMEPAGE')
+def mod_sources     = readModInfo('SOURCES')
+
+def targetJavaVersion = (project.findProperty('java_version') ?: '21') as int
+
+version = mod_version
+group = project.maven_group
+
+base {
+	archivesName = "${mod_name}-${project.name}"
+}
+
+sourceSets {
+	main {
+		java.srcDirs = ["${rootProject.projectDir}/src/main/java"]
+		resources.srcDirs = ["${rootProject.projectDir}/src/main/resources"]
+	}
+}
+
+repositories {
+	mavenLocal()
+	maven {
+		name = 'NyanMaven Release'
+		url = 'https://maven.hendrixshen.top/releases'
+	}
+	maven {
+		name = 'NyanMaven Mirror'
+		url = 'https://maven.hendrixshen.top/mirror'
+	}
+	maven {
+		name = 'Modrinth Maven'
+		url = 'https://api.modrinth.com/maven'
+	}
+	maven {
+		name = 'Jitpack Maven'
+		url = 'https://jitpack.io'
+	}
+	mavenCentral()
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// Fabric API
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Lombok
+	compileOnly "org.projectlombok:lombok:${project.lombok_version}"
+	annotationProcessor "org.projectlombok:lombok:${project.lombok_version}"
+
+	// MagicLib
+	modApi(annotationProcessor("top.hendrixshen.magiclib:magiclib-all-1.21.11-fabric:${project.magiclib_version}"))
+
+	// PinIn
+	implementation include("com.github.Towdium:PinIn:${project.pinin_version}")
+
+	// Optional dependencies
+	modCompileOnly "maven.modrinth:item-scroller:${project.itemscroller_version}"
+	modCompileOnly "maven.modrinth:litematica:${project.litematica_version}"
+	modCompileOnly "maven.modrinth:minihud:${project.minihud_version}"
+	modCompileOnly "maven.modrinth:tweakeroo:${project.tweakeroo_version}"
+	modCompileOnly files(project.jei_jar)
+}
+
+loom {
+	runConfigs.configureEach {
+		property 'mixin.debug.export', 'true'
+	}
+}
+
+processResources {
+	inputs.property 'magiclib_dependency', project.magiclib_dependency
+	inputs.property 'minecraft_dependency', project.minecraft_dependency
+	inputs.property 'mod_id', mod_id
+	inputs.property 'mod_description', mod_description
+	inputs.property 'mod_homepage', mod_homepage
+	inputs.property 'mod_license', mod_license
+	inputs.property 'mod_name', mod_name
+	inputs.property 'mod_sources', mod_sources
+	inputs.property 'mod_version', mod_version
+
+	filesMatching('fabric.mod.json') {
+		expand(
+			'magiclib_dependency' : project.magiclib_dependency,
+			'minecraft_dependency': project.minecraft_dependency,
+			'mod_id'             : mod_id,
+			'mod_description'    : mod_description,
+			'mod_homepage'       : mod_homepage,
+			'mod_license'        : mod_license,
+			'mod_name'           : mod_name,
+			'mod_sources'        : mod_sources,
+			'mod_version'        : mod_version
+		)
+	}
+
+	from("${rootDir}/LICENSE")
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = 'UTF-8'
+	it.options.release = targetJavaVersion
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
+	targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
+}
+
+jar {
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_${mod_name}" }
+	}
+}
+
+publishing {
+	publications {
+		create('mavenJava', MavenPublication) {
+			artifactId = mod_name
+			from components.java
+		}
+	}
+}

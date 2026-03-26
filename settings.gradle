@@ -16,7 +16,10 @@ Map<String, Object> settings = file("settings.json").withReader {
 }
 
 List<String> versions = settings.get("versions") as List<String>
-String defaultVersion = ""
+List<String> experimentalVersions = (settings.get("experimentalVersions") ?: []) as List<String>
+List<String> allVersions = new ArrayList<>()
+allVersions.addAll(versions)
+allVersions.addAll(experimentalVersions)
 String propTargetVersion = (gradle.startParameter.projectProperties.get("targetVersion") ?: "").trim()
 String envTargetVersion = (System.getenv("TARGET_VERSION") ?: "").trim()
 
@@ -31,24 +34,22 @@ gradle.startParameter.taskNames.each { String taskName ->
 
 List<String> selectedVersions
 if (!propTargetVersion.isEmpty()) {
-	if (!versions.contains(propTargetVersion)) {
-		throw new IllegalArgumentException("Unknown targetVersion: ${propTargetVersion}, available: ${versions}")
+	if (!allVersions.contains(propTargetVersion)) {
+		throw new IllegalArgumentException("Unknown targetVersion: ${propTargetVersion}, available: ${allVersions}")
 	}
 	selectedVersions = [propTargetVersion]
 } else if (!envTargetVersion.isEmpty()) {
-	if (!versions.contains(envTargetVersion)) {
-		throw new IllegalArgumentException("Unknown TARGET_VERSION: ${envTargetVersion}, available: ${versions}")
+	if (!allVersions.contains(envTargetVersion)) {
+		throw new IllegalArgumentException("Unknown TARGET_VERSION: ${envTargetVersion}, available: ${allVersions}")
 	}
 	selectedVersions = [envTargetVersion]
 } else {
-	List<String> requestedKnown = taskRequestedProjects.findAll { versions.contains(it) } as List<String>
+	List<String> requestedKnown = taskRequestedProjects.findAll { allVersions.contains(it) } as List<String>
 	if (!requestedKnown.isEmpty()) {
 		selectedVersions = requestedKnown
-	} else if (!defaultVersion.isEmpty()) {
-		if (!versions.contains(defaultVersion)) {
-			throw new IllegalArgumentException("Unknown defaultVersion: ${defaultVersion}, available: ${versions}")
-		}
-		selectedVersions = [defaultVersion]
+	} else if (gradle.startParameter.taskNames.isEmpty()) {
+		// IDE sync/import: only include stable versions to avoid experimental setup failures.
+		selectedVersions = versions
 	} else {
 		selectedVersions = []
 	}
@@ -58,5 +59,5 @@ for (String version : selectedVersions) {
 	include(":$version")
 	ProjectDescriptor proj = project(":$version")
 	proj.setProjectDir(file("versions/$version"))
-	proj.setBuildFileName("../../build.gradle")
+	proj.setBuildFileName("../build.gradle")
 }
