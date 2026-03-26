@@ -13,7 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.hendrixshen.magiclib.api.dependency.annotation.Dependencies;
 import top.hendrixshen.magiclib.api.dependency.annotation.Dependency;
 
-import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -38,11 +37,6 @@ public class MixinJeiElementSearch {
         }
 
         PinInHelper helper = PinInHelper.getInstance();
-        String normalizedQuery = helper.normalizePinyin(token.toLowerCase());
-        if (normalizedQuery.isEmpty()) {
-            return;
-        }
-
         Set<IListElement<?>> existing = cir.getReturnValue();
 
         Set<IListElement<?>> extra = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
@@ -54,8 +48,12 @@ public class MixinJeiElementSearch {
 
             mezz.jei.api.ingredients.ITypedIngredient<?> typed = element.getTypedIngredient();
             String displayName = masa_gadget$getDisplayName(typed);
-            if (displayName != null && helper.contains(displayName, normalizedQuery)) {
-                extra.add(element);
+            if (displayName != null) {
+                // Pass raw token so helper can run PinIn raw matching first.
+                if (helper.contains(displayName, token)) {
+                    extra.add(element);
+                    helper.preheatSource(displayName, Integer.MAX_VALUE);
+                }
             }
         }
 

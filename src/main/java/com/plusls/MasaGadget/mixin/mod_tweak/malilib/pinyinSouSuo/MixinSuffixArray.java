@@ -2,40 +2,35 @@ package com.plusls.MasaGadget.mixin.mod_tweak.malilib.pinyinSouSuo;
 
 import com.plusls.MasaGadget.game.Configs;
 import com.plusls.MasaGadget.impl.mod_tweak.malilib.pinyinSouSuo.PinInHelper;
-import com.plusls.MasaGadget.impl.mod_tweak.malilib.pinyinSouSuo.PinYinSouSuoKeyboard;
-import me.towdium.pinin.elements.Char;
-import me.towdium.pinin.elements.Pinyin;
 import net.minecraft.client.searchtree.SuffixArray;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import top.hendrixshen.magiclib.api.dependency.annotation.Dependencies;
 import top.hendrixshen.magiclib.api.dependency.annotation.Dependency;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Dependencies(conflict = @Dependency("jecharacters"))
 @Mixin(value = SuffixArray.class, priority = 900)
 public abstract class MixinSuffixArray<T> {
-    @Shadow
-    public abstract void add(T object, String string);
-
     @Unique
-    private static final int MAX_ALIAS_COUNT = 384;
-
+    private final Map<T, List<String>> masa_gadget$pinyinSources = new LinkedHashMap<>();
     @Unique
-    private boolean masa_gadget$addingPinyin = false;
+    private int masa_gadget$creativeItemCount = 0;
 
     @Inject(method = "add", at = @At("HEAD"))
-    private void masa_gadget$addPinyinEntry(T object, String string, CallbackInfo ci) {
-        if (masa_gadget$addingPinyin || !Configs.pinyinSouSuo.getBooleanValue()) {
+    private void masa_gadget$cacheSearchSource(T object, String string, CallbackInfo ci) {
+        if (!Configs.pinyinSouSuo.getBooleanValue() || string == null || string.isEmpty()) {
             return;
         }
 
@@ -55,102 +50,43 @@ public abstract class MixinSuffixArray<T> {
                 break;
             }
         }
+
         if (!hasChinese) {
             return;
         }
 
-        PinYinSouSuoKeyboard mode = (PinYinSouSuoKeyboard) Configs.pinyinSouSuoKeyboard.getOptionListValue();
+        this.masa_gadget$pinyinSources
+                .computeIfAbsent(object, k -> new ArrayList<>())
+                .add(source);
 
-        me.towdium.pinin.PinIn pinIn = PinInHelper.getInstance().getPinInInstance();
-        List<List<String>> optionsByChar = new ArrayList<>();
+        this.masa_gadget$creativeItemCount = this.masa_gadget$pinyinSources.size();
 
-        for (int i = 0; i < source.length(); i++) {
-            char c = source.charAt(i);
-            List<String> options = new ArrayList<>();
-
-            if (c >= '\u4e00' && c <= '\u9fff') {
-                Char charData = pinIn.getChar(c);
-                Pinyin[] pinyins = charData != null ? charData.pinyins() : null;
-                if (pinyins != null && pinyins.length > 0) {
-                    String py = pinyins[0].toString();
-                    if (py != null && !py.isEmpty()) {
-                        String full = PinInHelper.getInstance().normalizeBasic(py);
-                        if (!full.isEmpty()) {
-                            options.add(full);
-                            if (mode == PinYinSouSuoKeyboard.SUPER_FUZZY && full.length() > 2) {
-                                String minusOne = full.substring(0, full.length() - 1);
-                                if (!minusOne.equals(full)) {
-                                    options.add(minusOne);
-                                }
-                            }
-                            String initial = String.valueOf(full.charAt(0));
-                            if (!initial.equals(full)) {
-                                options.add(initial);
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (options.isEmpty()) {
-                String normalized = PinInHelper.getInstance().normalizeBasic(String.valueOf(c));
-                if (normalized.isEmpty()) {
-                    normalized = String.valueOf(c);
-                }
-                options.add(normalized);
-            }
-
-            optionsByChar.add(options);
-        }
-
-        Set<String> aliases = new LinkedHashSet<>();
-        masa_gadget$buildAliases(optionsByChar, 0, new StringBuilder(), aliases);
-
-        if (mode == PinYinSouSuoKeyboard.SUPER_FUZZY) {
-            // Extra cheap tolerance: one "drop-u" variant for each alias
-            List<String> snapshot = new ArrayList<>(aliases);
-            for (String alias : snapshot) {
-                if (aliases.size() >= MAX_ALIAS_COUNT) {
-                    break;
-                }
-                String noU = alias.replace("u", "");
-                if (!noU.isEmpty()) {
-                    aliases.add(noU);
-                }
-            }
-        }
-
-        masa_gadget$addingPinyin = true;
-        try {
-            for (String alias : aliases) {
-                if (!alias.isEmpty() && !alias.equals(string)) {
-                    this.add(object, alias);
-                }
-            }
-        } finally {
-            masa_gadget$addingPinyin = false;
-        }
+        // Preheat pinyin cache; helper clears only when creative item count increases.
+        PinInHelper.getInstance().preheatSource(source, this.masa_gadget$creativeItemCount);
     }
 
-    @Unique
-    private static void masa_gadget$buildAliases(List<List<String>> optionsByChar, int idx, StringBuilder current, Set<String> out) {
-        if (out.size() >= MAX_ALIAS_COUNT) {
-            return;
-        }
-        if (idx >= optionsByChar.size()) {
-            out.add(current.toString());
+    @Inject(method = "search", at = @At("RETURN"), cancellable = true)
+    private void masa_gadget$appendPinyinMatches(String query, CallbackInfoReturnable<List<T>> cir) {
+        if (!Configs.pinyinSouSuo.getBooleanValue() || query == null || query.isEmpty()) {
             return;
         }
 
-        List<String> options = optionsByChar.get(idx);
-        int oldLen = current.length();
-        for (String option : options) {
-            current.append(option);
-            masa_gadget$buildAliases(optionsByChar, idx + 1, current, out);
-            current.setLength(oldLen);
-            if (out.size() >= MAX_ALIAS_COUNT) {
-                return;
+        PinInHelper helper = PinInHelper.getInstance();
+        Set<T> merged = new LinkedHashSet<>(cir.getReturnValue());
+
+        for (Map.Entry<T, List<String>> entry : this.masa_gadget$pinyinSources.entrySet()) {
+            if (merged.contains(entry.getKey())) {
+                continue;
+            }
+
+            for (String source : entry.getValue()) {
+                if (helper.contains(source, query)) {
+                    merged.add(entry.getKey());
+                    break;
+                }
             }
         }
+
+        cir.setReturnValue(new ArrayList<>(merged));
     }
 }

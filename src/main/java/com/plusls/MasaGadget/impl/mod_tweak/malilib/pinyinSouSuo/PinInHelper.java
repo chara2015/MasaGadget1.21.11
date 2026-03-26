@@ -10,9 +10,11 @@ import me.towdium.pinin.PinIn;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PinInHelper {
@@ -25,6 +27,8 @@ public class PinInHelper {
             .build();
 
     private final PinIn pinIn = new PinIn().config().accelerate(true).commit();
+    private final Map<String, PinyinEntry> pinyinEntryCache = new ConcurrentHashMap<>();
+    private volatile int creativeItemCountFingerprint = -1;
 
     public PinIn getPinInInstance() {
         return this.pinIn;
@@ -44,13 +48,31 @@ public class PinInHelper {
         config.fCh2C(fuzzy);
         config.fU2V(fuzzy);
         config.commit();
-        // Pre-warm normalizeBasic to avoid first-call JIT stutter
+
+        // Keep cache across rebuilds; clear only when creative items increase.
         warmUpNormalizer();
     }
 
+    public void preheatSource(String source, int creativeItemCount) {
+        if (source == null || source.isEmpty()) {
+            return;
+        }
+
+        // Only treat "item count increased" as a cache change signal.
+        // No increase -> keep existing cache untouched.
+        int old = this.creativeItemCountFingerprint;
+        if (creativeItemCount > old) {
+            this.creativeItemCountFingerprint = creativeItemCount;
+            this.pinyinEntryCache.clear();
+        } else if (old < 0) {
+            this.creativeItemCountFingerprint = creativeItemCount;
+        }
+
+        this.pinyinEntryCache.computeIfAbsent(source, this::buildEntry);
+    }
+
     private static void warmUpNormalizer() {
-        // Run a dummy normalization to force JIT compilation before user interaction
-        String dummy = normalizeBasicStatic("\u4e0b\u754c"); // \u4e0b\u754c = \u4e0b\u754c (xia jie)
+        String dummy = normalizeBasicStatic("\u4e0b\u754c");
         if (dummy.isEmpty()) { /* prevent DCE */ }
     }
 
@@ -58,9 +80,11 @@ public class PinInHelper {
         if (s2 == null || s2.isEmpty()) {
             return true;
         }
-        String normalizedQuery = normalizePinyin(s2.toLowerCase());
 
-        if (this.pinIn.contains(s1, normalizedQuery)) {
+        String rawQuery = s2.toLowerCase();
+        String normalizedQuery = normalizePinyin(rawQuery);
+
+        if (this.pinIn.contains(s1, rawQuery)) {
             return true;
         }
 
@@ -72,14 +96,28 @@ public class PinInHelper {
             return true;
         }
 
+        PinyinEntry entry = this.pinyinEntryCache.computeIfAbsent(text, this::buildEntry);
+        if (entry == null) {
+            return false;
+        }
+
+        if (entry.full.contains(normalizedQuery) || entry.initials.contains(normalizedQuery)) {
+            return true;
+        }
+
         boolean superFuzzy = Configs.pinyinSouSuoKeyboard.getOptionListValue() == PinYinSouSuoKeyboard.SUPER_FUZZY;
+        return superFuzzy && containsBySyllablePrefixDp(entry.syllables, normalizedQuery);
+    }
+
+    private PinyinEntry buildEntry(String text) {
         StringBuilder full = new StringBuilder();
         StringBuilder initials = new StringBuilder();
-        List<String> syllables = superFuzzy ? new ArrayList<>() : null;
+        List<String> syllables = new ArrayList<>();
 
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
             boolean appended = false;
+
             if (c >= '\u4e00' && c <= '\u9fff') {
                 me.towdium.pinin.elements.Char charData = this.pinIn.getChar(c);
                 me.towdium.pinin.elements.Pinyin[] pinyins = charData != null ? charData.pinyins() : null;
@@ -94,9 +132,7 @@ public class PinInHelper {
                             if (!normalizedPy.isEmpty()) {
                                 full.append(normalizedPy);
                                 initials.append(normalizedPy.charAt(0));
-                                if (superFuzzy) {
-                                    syllables.add(normalizedPy);
-                                }
+                                syllables.add(normalizedPy);
                                 appended = true;
                             }
                             break;
@@ -104,22 +140,22 @@ public class PinInHelper {
                     }
                 }
             }
+
             if (!appended) {
                 String normalized = normalizePinyin(String.valueOf(Character.toLowerCase(c)));
                 if (!normalized.isEmpty()) {
                     full.append(normalized);
                     initials.append(normalized.charAt(0));
+                    syllables.add(normalized);
                 }
             }
         }
 
-        String fullStr = full.toString();
-        String initialsStr = initials.toString();
-        if (fullStr.contains(normalizedQuery) || initialsStr.contains(normalizedQuery)) {
-            return true;
+        if (full.isEmpty() && initials.isEmpty()) {
+            return null;
         }
 
-        return superFuzzy && containsBySyllablePrefixDp(syllables, normalizedQuery);
+        return new PinyinEntry(full.toString(), initials.toString(), Collections.unmodifiableList(syllables));
     }
 
     private static boolean containsBySyllablePrefixDp(List<String> syllables, String query) {
@@ -172,7 +208,6 @@ public class PinInHelper {
         return false;
     }
 
-    // Static variant used for warm-up (avoids instance state dependency)
     private static String normalizeBasicStatic(String py) {
         py = py.toLowerCase(Locale.ROOT);
         py = py.replace('\u00fc', 'v');
@@ -190,7 +225,6 @@ public class PinInHelper {
     public String normalizeBasic(String py) {
         py = py.toLowerCase(Locale.ROOT);
         py = py.replace('\u00fc', 'v');
-        // No-regex path: avoids pattern compile cost on first call
         String nfd = Normalizer.normalize(py, Normalizer.Form.NFD);
         StringBuilder sb = new StringBuilder(nfd.length());
         for (int i = 0; i < nfd.length(); i++) {
@@ -226,5 +260,17 @@ public class PinInHelper {
             py = py.replace("u", "v");
         }
         return py;
+    }
+
+    private static final class PinyinEntry {
+        final String full;
+        final String initials;
+        final List<String> syllables;
+
+        PinyinEntry(String full, String initials, List<String> syllables) {
+            this.full = full;
+            this.initials = initials;
+            this.syllables = syllables;
+        }
     }
 }

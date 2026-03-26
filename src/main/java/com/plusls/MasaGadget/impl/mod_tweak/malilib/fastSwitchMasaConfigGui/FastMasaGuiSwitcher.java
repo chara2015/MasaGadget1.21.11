@@ -90,7 +90,6 @@ public class FastMasaGuiSwitcher {
             return;
         }
 
-        Minecraft mc = Minecraft.getInstance();
         FabricLoader.getInstance().getEntrypointContainers("modmenu", Object.class).forEach(entrypoint -> {
             ModMetadata metadata = entrypoint.getProvider().getMetadata();
             try {
@@ -104,7 +103,7 @@ public class FastMasaGuiSwitcher {
 
                     configScreenFactoryCompat = screen -> {
                         try {
-                            return (Screen) this.createMethod.get().invoke(modConfigScreenFactory, screen);
+                            return (net.minecraft.client.gui.screens.Screen) this.createMethod.get().invoke(modConfigScreenFactory, screen);
                         } catch (IllegalAccessException | InvocationTargetException e) {
                             throw new RuntimeException(e);
                         }
@@ -116,14 +115,14 @@ public class FastMasaGuiSwitcher {
 
                         configScreenFactoryCompat = screen -> {
                             try {
-                                return (Screen) this.legacyCreateMethod.get().invoke(legacyModConfigScreenFactory, screen);
+                                return (net.minecraft.client.gui.screens.Screen) this.legacyCreateMethod.get().invoke(legacyModConfigScreenFactory, screen);
                             } catch (IllegalAccessException | InvocationTargetException e) {
                                 throw new RuntimeException(e);
                             }
                         };
                     } else {
                         // 1.14
-                        Function<Screen, ? extends Screen> f = MiscUtil.cast(this.legacyGetConfigScreenFactory.get().invoke(api));
+                        Function<net.minecraft.client.gui.screens.Screen, ? extends net.minecraft.client.gui.screens.Screen> f = MiscUtil.cast(this.legacyGetConfigScreenFactory.get().invoke(api));
                         configScreenFactoryCompat = f::apply;
                     }
                 } else {
@@ -131,28 +130,13 @@ public class FastMasaGuiSwitcher {
                     return;
                 }
 
-                Screen parent = mc.screen == null ? new TitleScreen() : mc.screen;
-                Screen screen = configScreenFactoryCompat.create(parent);
-
-                if (!(screen instanceof GuiConfigsBase)) {
-                    return;
-                }
-
+                // Do NOT create config screens here.
+                // Some mods (e.g. creativecore) are not safe to instantiate this early.
+                // We just register factories and create screens only when user opens them.
                 String modName = metadata.getName();
-
-                if (!this.guiClass.containsKey(screen.getClass())) {
-                    this.guiModName.put(configScreenFactoryCompat, () -> modName);
-                    this.guiClass.put(screen.getClass(), configScreenFactoryCompat);
-                } else {
-                    ModMenuApiCompat.ConfigScreenFactoryCompat<?> savedConfigScreenFactoryCompat = this.guiClass.get(screen.getClass());
-                    String savedName = this.guiModName.get(savedConfigScreenFactoryCompat).getStringValue();
-
-                    if (savedName.length() > modName.length()) {
-                        this.guiModName.put(savedConfigScreenFactoryCompat, () -> modName);
-                    }
-                }
+                this.guiModName.putIfAbsent(configScreenFactoryCompat, () -> modName);
             } catch (Throwable e) {
-                SharedConstants.getLogger().error("Mod {} provides a broken implementation of ModMenuApi", metadata.getId(), e);
+                SharedConstants.getLogger().warn("Skip broken ModMenuApi from mod {}", metadata.getId());
             }
         });
         //#elseif FORGE_LIKE
