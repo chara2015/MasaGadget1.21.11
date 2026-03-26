@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 pluginManagement {
 	repositories {
 		maven {
@@ -7,4 +9,54 @@ pluginManagement {
 		mavenCentral()
 		gradlePluginPortal()
 	}
+}
+
+Map<String, Object> settings = file("settings.json").withReader {
+	new JsonSlurper().parse(it) as Map<String, Object>
+}
+
+List<String> versions = settings.get("versions") as List<String>
+String defaultVersion = ""
+String propTargetVersion = (gradle.startParameter.projectProperties.get("targetVersion") ?: "").trim()
+String envTargetVersion = (System.getenv("TARGET_VERSION") ?: "").trim()
+
+// Auto-detect from requested tasks like :1.21.11-fabric:build
+Set<String> taskRequestedProjects = new LinkedHashSet<>()
+gradle.startParameter.taskNames.each { String taskName ->
+	def m = (taskName =~ /^:([^:]+):/)
+	if (m.find()) {
+		taskRequestedProjects.add(m.group(1))
+	}
+}
+
+List<String> selectedVersions
+if (!propTargetVersion.isEmpty()) {
+	if (!versions.contains(propTargetVersion)) {
+		throw new IllegalArgumentException("Unknown targetVersion: ${propTargetVersion}, available: ${versions}")
+	}
+	selectedVersions = [propTargetVersion]
+} else if (!envTargetVersion.isEmpty()) {
+	if (!versions.contains(envTargetVersion)) {
+		throw new IllegalArgumentException("Unknown TARGET_VERSION: ${envTargetVersion}, available: ${versions}")
+	}
+	selectedVersions = [envTargetVersion]
+} else {
+	List<String> requestedKnown = taskRequestedProjects.findAll { versions.contains(it) } as List<String>
+	if (!requestedKnown.isEmpty()) {
+		selectedVersions = requestedKnown
+	} else if (!defaultVersion.isEmpty()) {
+		if (!versions.contains(defaultVersion)) {
+			throw new IllegalArgumentException("Unknown defaultVersion: ${defaultVersion}, available: ${versions}")
+		}
+		selectedVersions = [defaultVersion]
+	} else {
+		selectedVersions = []
+	}
+}
+
+for (String version : selectedVersions) {
+	include(":$version")
+	ProjectDescriptor proj = project(":$version")
+	proj.setProjectDir(file("versions/$version"))
+	proj.setBuildFileName("../../build.gradle")
 }

@@ -4,7 +4,7 @@ plugins {
 }
 
 // Read mod metadata from ModInfo.java (single source of truth)
-def modInfoFile = file('src/main/java/com/plusls/MasaGadget/ModInfo.java')
+def modInfoFile = rootProject.file('src/main/java/com/plusls/MasaGadget/ModInfo.java')
 def modInfoText = modInfoFile.text
 def readModInfo = { String key ->
 	(modInfoText =~ /MOD_${key}\s*=\s*"([^"]+)"/).with { m -> m.find() ? m.group(1) : '' }
@@ -18,11 +18,21 @@ def mod_license     = readModInfo('LICENSE')
 def mod_homepage    = readModInfo('HOMEPAGE')
 def mod_sources     = readModInfo('SOURCES')
 
+def targetJavaVersion = (project.findProperty('java_version') ?: '21') as int
+
 version = mod_version
 group = project.maven_group
 
 base {
-	archivesName = mod_name
+	archivesName = "${mod_name}-${project.name}"
+}
+
+
+sourceSets {
+	main {
+		java.srcDirs = ["${rootProject.projectDir}/src/main/java"]
+		resources.srcDirs = ["${rootProject.projectDir}/src/main/resources"]
+	}
 }
 
 repositories {
@@ -108,18 +118,24 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = 'UTF-8'
-	it.options.release = 21
+	it.options.release = targetJavaVersion
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
+	targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
 }
 
 jar {
-	from("LICENSE") {
+	from(rootProject.file("LICENSE")) {
 		rename { "${it}_${mod_name}" }
+	}
+}
+
+if (project == rootProject) {
+	tasks.configureEach {
+		enabled = false
 	}
 }
 
